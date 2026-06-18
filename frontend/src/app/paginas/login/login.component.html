@@ -1,0 +1,91 @@
+<section class="auth-page" id="pagina-login">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <span class="brand-nome">tone</span>
+      <p class="brand-tagline">Seu marketplace de ativos de áudio</p>
+    </div>
+
+    <h1 class="auth-titulo">Entrar na sua conta</h1>
+
+    <!-- Erro: e-mail não verificado -->
+    <div class="alerta alerta-aviso" *ngIf="erroEmailNaoVerificado" id="aviso-email-nao-verificado">
+      <span class="alerta-icone">✉</span>
+      <span>E-mail ainda não verificado. Verifique sua caixa de entrada e clique no link de confirmação.</span>
+    </div>
+
+    <!-- Erro geral -->
+    <div class="alerta alerta-erro" *ngIf="erroGeral" id="aviso-erro-geral">
+      <span class="alerta-icone">✕</span>
+      <span>{{ erroGeral }}</span>
+    </div>
+
+    <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate id="form-login">
+
+      <!-- E-mail -->
+      <div class="campo-grupo">
+        <label for="login-email" class="campo-label">E-mail</label>
+        <input
+          id="login-email"
+          type="email"
+          formControlName="email"
+          class="campo-input"
+          [class.campo-erro]="email?.invalid && email?.touched"
+          placeholder="seu@email.com"
+          autocomplete="email"
+        />
+        <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('required')">
+          E-mail é obrigatório
+        </span>
+        <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('email')">
+          E-mail inválido
+        </span>
+      </div>
+
+      <!-- Senha -->
+      <div class="campo-grupo">
+        <label for="login-senha" class="campo-label">Senha</label>
+        <div class="campo-senha-wrapper">
+          <input
+            id="login-senha"
+            [type]="senhaVisivel ? 'text' : 'password'"
+            formControlName="senha"
+            class="campo-input"
+            [class.campo-erro]="senha?.invalid && senha?.touched"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="btn-olho"
+            (click)="alternarSenhaVisivel()"
+            [attr.aria-label]="senhaVisivel ? 'Ocultar senha' : 'Exibir senha'"
+            id="btn-alternar-senha-login"
+          >
+            {{ senhaVisivel ? '🙈' : '👁' }}
+          </button>
+        </div>
+        <span class="campo-mensagem-erro" *ngIf="senha?.touched && senha?.hasError('required')">
+          Senha é obrigatória
+        </span>
+      </div>
+
+      <button
+        type="submit"
+        class="btn-primario"
+        [disabled]="carregando"
+        id="btn-entrar"
+      >
+        <span *ngIf="!carregando">Entrar</span>
+        <span *ngIf="carregando" class="spinner"></span>
+      </button>
+
+    </form>
+
+    <p class="auth-rodape">
+      Não tem conta?
+      <a routerLink="/cadastro" id="link-cadastro">Criar conta</a>
+    </p>
+
+  </div>
+</section>

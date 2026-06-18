@@ -8,11 +8,12 @@
 
 ## Stack Tecnológica
 
-| Camada    | Tecnologia                  | Versão        |
-|-----------|-----------------------------|---------------|
-| Backend   | Java (Spring Boot)          | Última estável |
-| Frontend  | Angular                     | Última estável |
-| Testes    | JUnit 5 + Mockito (back), Jasmine/Karma (front) | — |
+| Camada         | Tecnologia                                      | Versão         |
+|----------------|-------------------------------------------------|----------------|
+| Backend        | Java (Spring Boot)                              | Última estável |
+| Frontend       | Angular                                         | Última estável |
+| Banco de Dados | MySQL                                           | Última estável |
+| Testes         | JUnit 5 + Mockito (back), Jasmine/Karma (front) | —              |
 
 ---
 
@@ -75,11 +76,12 @@ O projeto utiliza o **Obsidian** como repositório central de conhecimento, arqu
 
 ### Caminho do Vault
 ```
-C:\Users\berna\OneDrive\Documentos\Obsidian Vault\neurinvest
+C:\Users\berna\OneDrive\Documentos\Obsidian Vault\tone
 ```
 
 ### Regras de Alimentação
 - **Atualização Contínua:** Sempre que houver mudança de arquitetura, criação de nova entidade, nova regra de negócio ou refatoração importante, criar ou atualizar a nota correspondente no Obsidian.
+- **Stack Tecnológica:** Sempre que uma nova tecnologia, framework, biblioteca ou dependência for adicionada ao projeto (seja no `pom.xml`, `package.json` ou qualquer outro manifesto), **atualizar obrigatoriamente** a nota `[[Stack Tecnológica]]` no Obsidian, adicionando a nova entrada na tabela da camada correspondente (Backend, Frontend, Testes, Ferramentas).
 - **Formatação Padrão:**
   - Utilizar **Wikilinks** (`[[Nome do Arquivo]]`) para conectar conceitos.
   - Adicionar **Frontmatter (YAML)** no início de toda nova nota:
