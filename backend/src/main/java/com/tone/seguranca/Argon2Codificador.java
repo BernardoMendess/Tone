@@ -2,6 +2,7 @@ package com.tone.seguranca;
 
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
  * Parâmetros: iterations=3, memory=65536 (64MB), parallelism=1.
  */
 @Component
+@Primary
 public class Argon2Codificador implements PasswordEncoder {
 
     private static final int ITERACOES = 3;
