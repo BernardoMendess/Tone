@@ -1,17 +1,14 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../servicos/auth.service';
 
+/**
+ * Interceptor de autenticação.
+ * Com JWT em HttpOnly Cookie, o browser envia o cookie automaticamente nas requisições
+ * para o mesmo domínio. Apenas garantimos withCredentials: true em todas as chamadas à API.
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.obterToken();
+  const reqComCredenciais = req.clone({
+    withCredentials: true,
+  });
 
-  if (token) {
-    const reqAutenticado = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` },
-    });
-    return next(reqAutenticado);
-  }
-
-  return next(req);
+  return next(reqComCredenciais);
 };

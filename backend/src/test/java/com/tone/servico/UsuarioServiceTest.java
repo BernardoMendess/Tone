@@ -45,6 +45,8 @@ class UsuarioServiceTest {
         usuarioBase.setEmail("joao@example.com");
         usuarioBase.setCpf("529.982.247-25");
         usuarioBase.setSenha("Senha@123");
+        usuarioBase.setAtivo(true);
+        usuarioBase.setEmailVerificado(true);
     }
 
     // --- Cadastro ---
@@ -104,10 +106,10 @@ class UsuarioServiceTest {
     @Test
     @DisplayName("Login com credenciais válidas e e-mail verificado deve retornar token")
     void loginValido() {
-        usuarioBase.setEmailVerificado(true);
         when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
         when(codificador.matches("Senha@123", usuarioBase.getSenha())).thenReturn(true);
         when(jwtUtil.gerarToken(usuarioBase)).thenReturn("token_jwt");
+        when(usuarioRepository.save(any())).thenReturn(usuarioBase);
 
         String token = usuarioService.autenticar("joao@example.com", "Senha@123");
 
@@ -128,6 +130,7 @@ class UsuarioServiceTest {
     void loginSenhaErrada() {
         when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
         when(codificador.matches(anyString(), any())).thenReturn(false);
+        when(usuarioRepository.save(any())).thenReturn(usuarioBase);
 
         assertThrows(CredenciaisInvalidasException.class,
                 () -> usuarioService.autenticar("joao@example.com", "SenhaErrada@1"));
@@ -139,9 +142,64 @@ class UsuarioServiceTest {
         usuarioBase.setEmailVerificado(false);
         when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
         when(codificador.matches(anyString(), any())).thenReturn(true);
+        when(usuarioRepository.save(any())).thenReturn(usuarioBase);
 
         assertThrows(EmailNaoVerificadoException.class,
                 () -> usuarioService.autenticar("joao@example.com", "Senha@123"));
+    }
+
+    @Test
+    @DisplayName("Login com conta inativa deve lançar ContaInativaException")
+    void loginContaInativa() {
+        usuarioBase.setAtivo(false);
+        when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
+
+        assertThrows(ContaInativaException.class,
+                () -> usuarioService.autenticar("joao@example.com", "Senha@123"));
+    }
+
+    @Test
+    @DisplayName("Login com conta bloqueada deve lançar ContaBloqueadaException")
+    void loginContaBloqueada() {
+        usuarioBase.setBloqueadoAte(LocalDateTime.now().plusMinutes(10));
+        when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
+
+        assertThrows(ContaBloqueadaException.class,
+                () -> usuarioService.autenticar("joao@example.com", "Senha@123"));
+    }
+
+    @Test
+    @DisplayName("Após 5 tentativas falhas a conta deve ser bloqueada")
+    void contaDeveSerbloqueadaApos5TentativasFalhas() {
+        when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
+        when(codificador.matches(anyString(), any())).thenReturn(false);
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        // 4 tentativas ainda não bloqueiam
+        for (int i = 0; i < 4; i++) {
+            assertThrows(CredenciaisInvalidasException.class,
+                    () -> usuarioService.autenticar("joao@example.com", "SenhaErrada@1"));
+        }
+        assertNull(usuarioBase.getBloqueadoAte(), "Não deve estar bloqueado antes de 5 tentativas");
+
+        // 5ª tentativa deve bloquear
+        assertThrows(CredenciaisInvalidasException.class,
+                () -> usuarioService.autenticar("joao@example.com", "SenhaErrada@1"));
+        assertNotNull(usuarioBase.getBloqueadoAte(), "Deve estar bloqueado após 5 tentativas");
+    }
+
+    @Test
+    @DisplayName("Login bem-sucedido deve resetar tentativas falhas")
+    void loginSucessoDeveresetarTentativas() {
+        usuarioBase.setTentativasLoginFalhas(3);
+        when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
+        when(codificador.matches("Senha@123", usuarioBase.getSenha())).thenReturn(true);
+        when(jwtUtil.gerarToken(usuarioBase)).thenReturn("token_jwt");
+        when(usuarioRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        usuarioService.autenticar("joao@example.com", "Senha@123");
+
+        assertEquals(0, usuarioBase.getTentativasLoginFalhas());
     }
 
     // --- Verificação de E-mail ---

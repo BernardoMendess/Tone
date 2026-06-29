@@ -13,6 +13,5 @@ export interface LoginRequisicao {
 }
 
 export interface LoginResposta {
-  token: string;
   usuario: Usuario;
 }

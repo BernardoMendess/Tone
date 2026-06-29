@@ -7,7 +7,9 @@ import com.tone.controlador.dto.LoginRequisicao;
 import com.tone.modelo.Usuario;
 import com.tone.modelo.enums.TipoPerfil;
 import com.tone.seguranca.ConfiguracaoSeguranca;
+import com.tone.seguranca.JwtUtil;
 import com.tone.servico.UsuarioService;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -40,6 +43,15 @@ class AutenticacaoControllerTest {
 
     @MockBean
     private com.tone.seguranca.JwtFiltroAutenticacao jwtFiltro;
+
+    @MockBean
+    private JwtUtil jwtUtil;
+
+    @MockBean
+    private com.tone.seguranca.Argon2Codificador argon2Codificador;
+
+    @MockBean
+    private com.tone.repositorio.UsuarioRepository usuarioRepository;
 
     // --- Cadastro ---
 
@@ -91,7 +103,7 @@ class AutenticacaoControllerTest {
     // --- Login ---
 
     @Test
-    @DisplayName("POST /login com credenciais válidas deve retornar 200 com token")
+    @DisplayName("POST /login com credenciais válidas deve retornar 200 e setar HttpOnly Cookie")
     void loginValido() throws Exception {
         LoginRequisicao requisicao = new LoginRequisicao("joao@example.com", "Senha@123");
 
@@ -108,7 +120,11 @@ class AutenticacaoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requisicao)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("token_jwt"));
+                // Token NÃO deve aparecer no body
+                .andExpect(jsonPath("$.token").doesNotExist())
+                // Cookie HttpOnly deve estar presente
+                .andExpect(header().string("Set-Cookie", containsString("tone_token")))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")));
     }
 
     @Test
@@ -135,6 +151,31 @@ class AutenticacaoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requisicao)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /login com conta bloqueada deve retornar 429")
+    void loginContaBloqueada() throws Exception {
+        LoginRequisicao requisicao = new LoginRequisicao("joao@example.com", "Senha@123");
+        when(usuarioService.autenticar(anyString(), anyString()))
+                .thenThrow(new ContaBloqueadaException(10));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requisicao)))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    // --- Logout ---
+
+    @Test
+    @DisplayName("POST /logout deve retornar 200 e limpar o cookie")
+    void logout() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensagem").exists())
+                .andExpect(header().string("Set-Cookie", containsString("tone_token=")))
+                .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")));
     }
 
     // --- Verificar E-mail ---

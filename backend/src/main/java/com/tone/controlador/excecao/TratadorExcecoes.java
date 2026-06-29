@@ -32,6 +32,16 @@ public class TratadorExcecoes {
         return criarResposta(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(ContaBloqueadaException.class)
+    public ResponseEntity<Map<String, Object>> tratarContaBloqueada(ContaBloqueadaException ex) {
+        return criarResposta(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    @ExceptionHandler(ContaInativaException.class)
+    public ResponseEntity<Map<String, Object>> tratarContaInativa(ContaInativaException ex) {
+        return criarResposta(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     @ExceptionHandler(EmailNaoVerificadoException.class)
     public ResponseEntity<Map<String, Object>> tratarEmailNaoVerificado(EmailNaoVerificadoException ex) {
         return criarResposta(HttpStatus.FORBIDDEN, ex.getMessage());

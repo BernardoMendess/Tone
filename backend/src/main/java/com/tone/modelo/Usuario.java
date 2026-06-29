@@ -48,6 +48,18 @@ public class Usuario {
     @Column(name = "email_verificado", nullable = false)
     private boolean emailVerificado = false;
 
+    /** Conta ativa — false quando desativada por admin ou processo interno. */
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo = true;
+
+    /** Contador de tentativas de login consecutivas com falha. Resetado após login bem-sucedido. */
+    @Column(name = "tentativas_login_falhas", nullable = false)
+    private int tentativasLoginFalhas = 0;
+
+    /** Data/hora até quando a conta está bloqueada por excesso de tentativas falhas. Null = não bloqueada. */
+    @Column(name = "bloqueado_ate")
+    private LocalDateTime bloqueadoAte;
+
     @CreationTimestamp
     @Column(name = "data_criacao", nullable = false, updatable = false)
     private LocalDateTime dataCriacao;
@@ -73,6 +85,20 @@ public class Usuario {
 
     public boolean isEmailVerificado() { return emailVerificado; }
     public void setEmailVerificado(boolean emailVerificado) { this.emailVerificado = emailVerificado; }
+
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+
+    public int getTentativasLoginFalhas() { return tentativasLoginFalhas; }
+    public void setTentativasLoginFalhas(int tentativasLoginFalhas) { this.tentativasLoginFalhas = tentativasLoginFalhas; }
+
+    public LocalDateTime getBloqueadoAte() { return bloqueadoAte; }
+    public void setBloqueadoAte(LocalDateTime bloqueadoAte) { this.bloqueadoAte = bloqueadoAte; }
+
+    /** Retorna true se a conta está temporariamente bloqueada por excesso de tentativas falhas. */
+    public boolean estaBloqueado() {
+        return bloqueadoAte != null && LocalDateTime.now().isBefore(bloqueadoAte);
+    }
 
     public LocalDateTime getDataCriacao() { return dataCriacao; }
 }

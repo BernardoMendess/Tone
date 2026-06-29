@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { CadastroRequisicao, LoginRequisicao, LoginResposta } from '../modelos/auth.model';
 import { Usuario } from '../modelos/usuario.model';
 
@@ -9,70 +9,48 @@ import { Usuario } from '../modelos/usuario.model';
 })
 export class AuthService {
   private readonly apiUrl = 'http://localhost:8080/api/auth';
-  private readonly TOKEN_KEY = 'tone_token';
 
   constructor(private http: HttpClient) {}
 
   cadastrar(dados: CadastroRequisicao): Observable<{ mensagem: string }> {
-    return this.http.post<{ mensagem: string }>(`${this.apiUrl}/cadastrar`, dados);
+    return this.http.post<{ mensagem: string }>(`${this.apiUrl}/cadastrar`, dados, {
+      withCredentials: true,
+    });
   }
 
+  /**
+   * Realiza o login. O backend seta o JWT como HttpOnly Cookie automaticamente.
+   * O token nunca é acessível via JavaScript — isso previne ataques XSS.
+   */
   login(dados: LoginRequisicao): Observable<LoginResposta> {
-    return this.http.post<LoginResposta>(`${this.apiUrl}/login`, dados).pipe(
-      tap((resposta) => this.salvarToken(resposta.token))
-    );
+    return this.http.post<LoginResposta>(`${this.apiUrl}/login`, dados, {
+      withCredentials: true,
+    });
+  }
+
+  /**
+   * Remove o cookie de autenticação no servidor (maxAge=0).
+   */
+  logout(): Observable<{ mensagem: string }> {
+    return this.http.post<{ mensagem: string }>(`${this.apiUrl}/logout`, {}, {
+      withCredentials: true,
+    });
+  }
+
+  /**
+   * Verifica se o usuário está autenticado consultando o endpoint /me no servidor.
+   * Como o token está em HttpOnly Cookie, não é possível verificar no frontend sem consultar o backend.
+   */
+  obterUsuarioLogado(): Observable<Partial<Usuario>> {
+    return this.http.get<Partial<Usuario>>(`${this.apiUrl}/me`, {
+      withCredentials: true,
+    });
   }
 
   verificarEmail(token: string): Observable<{ mensagem: string }> {
     return this.http.get<{ mensagem: string }>(`${this.apiUrl}/verificar-email`, {
       params: { token },
+      withCredentials: true,
     });
-  }
-
-  logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-  }
-
-  estaAutenticado(): boolean {
-    const token = this.obterToken();
-    if (!token) return false;
-
-    try {
-      const payload = this.decodificarToken(token);
-      const agora = Math.floor(Date.now() / 1000);
-      return payload.exp > agora;
-    } catch {
-      return false;
-    }
-  }
-
-  obterToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  obterUsuarioLogado(): Partial<Usuario> | null {
-    const token = this.obterToken();
-    if (!token) return null;
-
-    try {
-      const payload = this.decodificarToken(token);
-      return {
-        email: payload.sub,
-        id: payload.id,
-        tipoPerfil: payload.tipoPerfil,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  private salvarToken(token: string): void {
-    localStorage.setItem(this.TOKEN_KEY, token);
-  }
-
-  private decodificarToken(token: string): any {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64));
   }
 }

@@ -14,11 +14,18 @@
       <span>E-mail ainda não verificado. Verifique sua caixa de entrada e clique no link de confirmação.</span>
     </div>
 
+    <!-- Erro: conta bloqueada por excesso de tentativas -->
+    <div class="alerta alerta-erro" *ngIf="erroContaBloqueada" id="aviso-conta-bloqueada">
+      <span class="alerta-icone">🔒</span>
+      <span>{{ erroGeral }}</span>
+    </div>
+
     <!-- Erro geral -->
-    <div class="alerta alerta-erro" *ngIf="erroGeral" id="aviso-erro-geral">
+    <div class="alerta alerta-erro" *ngIf="erroGeral && !erroContaBloqueada" id="aviso-erro-geral">
       <span class="alerta-icone">✕</span>
       <span>{{ erroGeral }}</span>
     </div>
+
 
     <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate id="form-login">
 

@@ -16,6 +16,7 @@ export class LoginComponent {
   carregando = false;
   erroGeral = '';
   erroEmailNaoVerificado = false;
+  erroContaBloqueada = false;
   senhaVisivel = false;
 
   constructor(
@@ -45,7 +46,10 @@ export class LoginComponent {
     this.carregando = true;
     this.erroGeral = '';
     this.erroEmailNaoVerificado = false;
+    this.erroContaBloqueada = false;
 
+    // O token é recebido como HttpOnly Cookie pelo browser automaticamente.
+    // Apenas navegamos para a home após sucesso.
     this.authService.login(this.formulario.value).subscribe({
       next: () => this.router.navigate(['/']),
       error: (err) => {
@@ -54,6 +58,9 @@ export class LoginComponent {
           this.erroEmailNaoVerificado = true;
         } else if (err.status === 401) {
           this.erroGeral = 'E-mail ou senha inválidos.';
+        } else if (err.status === 429) {
+          this.erroContaBloqueada = true;
+          this.erroGeral = err.error?.mensagem ?? 'Conta temporariamente bloqueada. Tente novamente mais tarde.';
         } else {
           this.erroGeral = 'Erro ao fazer login. Tente novamente.';
         }

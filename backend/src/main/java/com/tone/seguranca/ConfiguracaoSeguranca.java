@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,12 +23,20 @@ public class ConfiguracaoSeguranca {
     @Bean
     public SecurityFilterChain filtroSeguranca(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                // CSRF desabilitado: tokens são transmitidos via cookie HttpOnly com SameSite=Strict,
+                // que já previne CSRF em si mesmo. Caso mude para SameSite=Lax ou None, reabilitar.
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Endpoints públicos listados explicitamente — sem wildcard
+                        .requestMatchers(
+                                "/api/auth/cadastrar",
+                                "/api/auth/login",
+                                "/api/auth/verificar-email",
+                                "/api/auth/logout"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFiltro, UsernamePasswordAuthenticationFilter.class);

@@ -99,3 +99,28 @@ C:\Users\berna\OneDrive\Documentos\Obsidian Vault\tone
   - Para código, usar o nome exato da classe/componente (ex: `ProdutoService`).
   - Para entidades, usar o nome no singular (ex: `Usuario`).
   - Para lógicas globais, usar prefixos (ex: `Regra - Cálculo de Royalties`, `Arch - Fluxo de Autenticação`).
+
+## 🛡️ Segurança
+A segurança deve ser eficiente e não atrasar o lançamento. A regra é **não reinventar a roda**.
+
+### 1. Terceirização Crítica (BaaS & PaaS)
+*   **Autenticação:** Proibido criar sistemas de login complexos do zero. Usar infraestrutura madura ou provedores externos.
+*   **Pagamentos:** Nenhuma transação ou dado de cartão deve passar pelos nossos servidores. Usar infraestrutura de terceiros (Stripe).
+*   **Infraestrutura:** Hospedagem gerenciada para delegar proteção básica de infra e configuração de certificados SSL.
+
+### 2. Defesa Ativa no Código
+*   **Prompting Defensivo:** Sempre instruir a IA a usar práticas seguras. Ex: *"Gere esta query garantindo sanitização contra SQL Injection"*.
+*   **Análise Estática (SAST):** Manter verificadores de dependências (Snyk, Dependabot) ativos no repositório para evitar o uso de pacotes com vulnerabilidades conhecidas.
+
+### 3. Regras Estritas para OAuth2 (Spring Security)
+Ao integrar provedores externos (Google, GitHub), as seguintes travas de segurança são obrigatórias na arquitetura do backend:
+*   **Proteção de Credenciais:** Proibido *hardcode*. Injetar `client-id` e `client-secret` exclusivamente via variáveis de ambiente no `application.yml`.
+*   **Prevenção de Account Takeover (Sequestro de Conta):** Na classe que estende `DefaultOAuth2UserService`, ao cruzar o e-mail do provedor com o banco de dados interno, é obrigatório validar a flag de verificação do provedor (ex: `email_verified: true`). Isso impede que invasores usem contas falsas em provedores terceiros com o e-mail de usuários legítimos do sistema.
+*   **Blindagem do JWT (SuccessHandler):** Após a autenticação bem-sucedida, é proibido trafegar o token JWT gerado via parâmetro de URL (`?token=...`) para o front-end, evitando exposição no histórico do navegador. O token deve ser trafegado e armazenado utilizando **Cookies HttpOnly**.
+
+### 4. Hardening de Autenticação
+*   **Rate Limiting:** Implementar rate limiting nos endpoints de autenticação (`/login`, `/cadastrar`). Máximo de 5 tentativas por minuto por IP.
+*   **Account Lockout:** Após 5 tentativas de login falhas consecutivas, bloquear a conta por 15 minutos. O contador deve ser resetado após um login bem-sucedido. A constante `MAX_TENTATIVAS_FALHAS` e `MINUTOS_BLOQUEIO` devem estar definidas no Service.
+*   **Validação de Usuário Ativo:** O filtro JWT deve sempre verificar se o usuário ainda existe **e** está com o campo `ativo = true` no banco de dados antes de autenticar a requisição — tokens de contas deletadas ou desativadas devem ser rejeitados.
+*   **Endpoints Públicos Explícitos:** Proibido usar wildcards (`/**`) para liberar endpoints no Spring Security. Cada endpoint público deve ser listado individualmente no `ConfiguracaoSeguranca`.
+*   **Credenciais via Variáveis de Ambiente:** Em produção, **todas** as credenciais sensíveis (`jwt.segredo`, `spring.datasource.username`, `spring.datasource.password`) devem ser injetadas via variáveis de ambiente sem fallback. Em desenvolvimento, fallbacks são permitidos apenas no `application.properties` base.
