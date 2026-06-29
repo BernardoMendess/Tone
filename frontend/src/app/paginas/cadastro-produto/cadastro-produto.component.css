@@ -4,15 +4,15 @@
   align-items: center;
   min-height: 100vh;
   padding: 2rem;
-  background-color: #121214;
-  color: #e1e1e6;
+  background-color: var(--cor-fundo-componente);
+  color: var(--cor-texto-componente);
   font-family: 'Inter', sans-serif;
 }
 
 .glass-panel {
-  background: rgba(32, 32, 36, 0.6);
+  background: var(--cor-glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--cor-glass-borda);
   border-radius: 16px;
   padding: 3rem;
   width: 100%;
@@ -24,7 +24,7 @@
   font-size: 2.5rem;
   font-weight: 800;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #8257e5, #04d361);
+  background: var(--gradiente-marca);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
@@ -32,7 +32,7 @@
 
 .subtitle {
   text-align: center;
-  color: #a8a8b3;
+  color: var(--cor-texto-secundario);
   margin-bottom: 2rem;
 }
 
@@ -59,14 +59,14 @@
 
 label {
   font-weight: 500;
-  color: #e1e1e6;
+  color: var(--cor-texto-componente);
   font-size: 0.9rem;
 }
 
 input, textarea {
-  background: #121214;
-  border: 1px solid #323238;
-  color: #e1e1e6;
+  background: var(--cor-fundo-componente);
+  border: 1px solid var(--cor-fundo-borda);
+  color: var(--cor-texto-componente);
   padding: 1rem;
   border-radius: 8px;
   font-size: 1rem;
@@ -75,8 +75,8 @@ input, textarea {
 }
 
 input:focus, textarea:focus {
-  border-color: #8257e5;
-  box-shadow: 0 0 0 2px rgba(130, 87, 229, 0.2);
+  border-color: var(--cor-marca-primaria);
+  box-shadow: 0 0 0 2px var(--cor-marca-primaria-glow);
 }
 
 /* Tags / Gêneros Musicais */
@@ -87,9 +87,9 @@ input:focus, textarea:focus {
 }
 
 .tag-chip {
-  background: #29292e;
+  background: var(--cor-fundo-card);
   border: 1px solid transparent;
-  color: #e1e1e6;
+  color: var(--cor-texto-componente);
   padding: 0.5rem 1rem;
   border-radius: 999px;
   font-size: 0.85rem;
@@ -98,13 +98,13 @@ input:focus, textarea:focus {
 }
 
 .tag-chip:hover {
-  background: #323238;
+  background: var(--cor-fundo-borda);
 }
 
 .tag-chip.active {
-  background: rgba(130, 87, 229, 0.15);
-  color: #8257e5;
-  border-color: #8257e5;
+  background: var(--cor-marca-primaria-sutil);
+  color: var(--cor-marca-primaria);
+  border-color: var(--cor-marca-primaria);
   font-weight: 600;
 }
 
@@ -116,20 +116,20 @@ input:focus, textarea:focus {
   justify-content: center;
   width: 100%;
   height: 120px;
-  border: 2px dashed #323238;
+  border: 2px dashed var(--cor-fundo-borda);
   border-radius: 8px;
-  background: #1a1a1e;
+  background: var(--cor-fundo-elevado);
   transition: all 0.2s;
   cursor: pointer;
 }
 
 .file-drop-area:hover {
-  border-color: #8257e5;
-  background: rgba(130, 87, 229, 0.05);
+  border-color: var(--cor-marca-primaria);
+  background: var(--cor-marca-primaria-sutil);
 }
 
 .file-msg {
-  color: #a8a8b3;
+  color: var(--cor-texto-secundario);
   font-size: 0.95rem;
   pointer-events: none;
 }
@@ -147,7 +147,7 @@ input:focus, textarea:focus {
 /* Status & Progress */
 .status-area {
   padding: 1rem;
-  background: #1a1a1e;
+  background: var(--cor-fundo-elevado);
   border-radius: 8px;
   text-align: center;
 }
@@ -161,21 +161,21 @@ input:focus, textarea:focus {
 .progress-bar-bg {
   width: 100%;
   height: 8px;
-  background: #323238;
+  background: var(--cor-fundo-borda);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8257e5, #04d361);
+  background: var(--gradiente-marca-horizontal);
   width: 0%;
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 0.85rem;
-  color: #a8a8b3;
+  color: var(--cor-texto-secundario);
 }
 
 .status-msg {
@@ -183,17 +183,17 @@ input:focus, textarea:focus {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  color: #e1e1e6;
+  color: var(--cor-texto-componente);
   font-weight: 500;
 }
 
 .success {
-  color: #04d361;
+  color: var(--cor-sucesso);
 }
 
 /* Button */
 .btn-primary {
-  background: #8257e5;
+  background: var(--cor-marca-primaria);
   color: #fff;
   border: none;
   padding: 1rem;
@@ -205,20 +205,20 @@ input:focus, textarea:focus {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #9466ff;
+  background: var(--cor-marca-primaria-hover);
   transform: translateY(-2px);
 }
 
 .btn-primary:disabled {
-  background: #323238;
-  color: #7c7c8a;
+  background: var(--cor-fundo-borda);
+  color: var(--cor-texto-desabilitado);
   cursor: not-allowed;
 }
 
 .alert-error {
-  background: rgba(247, 90, 104, 0.15);
-  border: 1px solid #f75a68;
-  color: #f75a68;
+  background: var(--cor-erro-sutil);
+  border: 1px solid var(--cor-erro);
+  color: var(--cor-erro);
   padding: 1rem;
   border-radius: 8px;
   text-align: center;
@@ -230,7 +230,7 @@ input:focus, textarea:focus {
   width: 20px;
   height: 20px;
   border: 3px solid rgba(255, 255, 255, 0.1);
-  border-left-color: #8257e5;
+  border-left-color: var(--cor-marca-primaria);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

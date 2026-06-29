@@ -52,6 +52,16 @@ public class TratadorExcecoes {
         return criarResposta(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(ProdutoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> tratarProdutoNaoEncontrado(ProdutoNaoEncontradoException ex) {
+        return criarResposta(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(CriadorNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> tratarCriadorNaoEncontrado(CriadorNaoEncontradoException ex) {
+        return criarResposta(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> tratarValidacao(MethodArgumentNotValidException ex) {
         Map<String, String> erros = new HashMap<>();

@@ -1,5 +1,6 @@
 package com.tone.controlador.dto;
 
+import com.tone.modelo.validacao.MimeTypeValido;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -16,6 +17,7 @@ public class UploadUrlRequest {
     private Long tamanhoBytes;
 
     @NotBlank(message = "O tipo do arquivo é obrigatório")
+    @MimeTypeValido
     private String mimeType;
 
     public String getNomeArquivo() {

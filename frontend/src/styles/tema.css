@@ -1,0 +1,40 @@
+/**
+ * Sistema de design do Tone — Paleta de cores centralizada.
+ * Todas as cores do projeto devem ser referenciadas a partir deste arquivo.
+ * Nunca utilize valores hexadecimais diretamente nos componentes.
+ */
+
+:root {
+  /* === Fundos === */
+  --cor-fundo-principal: #0A0A0A;
+  --cor-fundo-componente: #121214;
+  --cor-fundo-elevado: #1a1a1e;
+  --cor-fundo-card: #29292e;
+  --cor-fundo-borda: #323238;
+
+  /* === Superfície Glassmorphism === */
+  --cor-glass-bg: rgba(32, 32, 36, 0.6);
+  --cor-glass-borda: rgba(255, 255, 255, 0.05);
+
+  /* === Texto === */
+  --cor-texto-primario: #F4F4F5;
+  --cor-texto-componente: #e1e1e6;
+  --cor-texto-secundario: #a8a8b3;
+  --cor-texto-desabilitado: #7c7c8a;
+
+  /* === Marca (Roxo + Verde) === */
+  --cor-marca-primaria: #8257e5;
+  --cor-marca-primaria-hover: #9466ff;
+  --cor-marca-primaria-sutil: rgba(130, 87, 229, 0.15);
+  --cor-marca-primaria-glow: rgba(130, 87, 229, 0.2);
+  --cor-marca-secundaria: #04d361;
+
+  /* === Gradientes === */
+  --gradiente-marca: linear-gradient(135deg, var(--cor-marca-primaria), var(--cor-marca-secundaria));
+  --gradiente-marca-horizontal: linear-gradient(90deg, var(--cor-marca-primaria), var(--cor-marca-secundaria));
+
+  /* === Feedback === */
+  --cor-erro: #f75a68;
+  --cor-erro-sutil: rgba(247, 90, 104, 0.15);
+  --cor-sucesso: #04d361;
+}

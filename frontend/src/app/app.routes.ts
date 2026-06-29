@@ -13,6 +13,12 @@ export const routes: Routes = [
       import('./paginas/cadastro/cadastro.component').then((m) => m.CadastroComponent),
   },
   {
+    path: 'cadastro-produto',
+    loadComponent: () =>
+      import('./paginas/cadastro-produto/cadastro-produto.component').then((m) => m.CadastroProdutoComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'verificar-email',
     loadComponent: () =>
       import('./paginas/verificar-email/verificar-email.component').then(

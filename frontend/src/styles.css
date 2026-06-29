@@ -1,3 +1,5 @@
+@import 'styles/tema.css';
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -6,7 +8,7 @@
 
 html, body {
   height: 100%;
-  background-color: #0A0A0A;
-  color: #F4F4F5;
+  background-color: var(--cor-fundo-principal);
+  color: var(--cor-texto-primario);
   -webkit-font-smoothing: antialiased;
 }
