@@ -27,7 +27,12 @@ export const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: '/login',
-    pathMatch: 'full',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./paginas/home/home.component').then((m) => m.HomeComponent),
   },
+  {
+    path: '**',
+    redirectTo: '',
+  }
 ];

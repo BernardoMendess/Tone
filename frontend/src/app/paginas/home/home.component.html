@@ -1,0 +1,20 @@
+<div class="home-container" *ngIf="carregando">
+  <div class="spinner-grande"></div>
+</div>
+
+<div class="home-container" *ngIf="!carregando && usuario">
+  <div class="home-card">
+    <div class="auth-brand">
+      <span class="brand-nome">tone</span>
+    </div>
+    
+    <h1>Bem-vindo, {{ usuario.nomeCompleto }}!</h1>
+    
+    <div class="usuario-info">
+      <p><strong>E-mail:</strong> {{ usuario.email }}</p>
+      <p><strong>Perfil:</strong> {{ usuario.tipoPerfil }}</p>
+    </div>
+    
+    <button class="btn-primario" (click)="logout()">Sair</button>
+  </div>
+</div>

@@ -51,7 +51,10 @@ export class LoginComponent {
     // O token é recebido como HttpOnly Cookie pelo browser automaticamente.
     // Apenas navegamos para a home após sucesso.
     this.authService.login(this.formulario.value).subscribe({
-      next: () => this.router.navigate(['/']),
+      next: () => {
+        this.carregando = false;
+        this.router.navigate(['/']);
+      },
       error: (err) => {
         this.carregando = false;
         if (err.status === 403) {
