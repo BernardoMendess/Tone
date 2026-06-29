@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpEvent, HttpRequest } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpRequest, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ProdutoRequest, ProdutoResponse, UploadUrlRequest, UploadUrlResponse } from '../modelos/produto.model';
 
@@ -20,9 +20,9 @@ export class ProdutoService {
   fazerUploadArquivo(url: string, arquivo: File): Observable<HttpEvent<any>> {
     const req = new HttpRequest('PUT', url, arquivo, {
       reportProgress: true,
-      headers: {
+      headers: new HttpHeaders({
         'Content-Type': arquivo.type
-      }
+      })
     });
 
     return this.http.request(req);

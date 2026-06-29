@@ -60,7 +60,7 @@ public class ProdutoServico {
      */
     @Transactional
     public Produto criarProduto(ProdutoRequest request, String emailCriador) {
-        Usuario criador = usuarioRepository.findByEmail(emailCriador)
+        Usuario criador = usuarioRepository.encontrarPorEmail(emailCriador)
                 .orElseThrow(() -> new CriadorNaoEncontradoException(emailCriador));
 
         Produto produto = new Produto();
