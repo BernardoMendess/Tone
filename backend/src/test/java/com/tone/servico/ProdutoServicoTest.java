@@ -102,7 +102,7 @@ class ProdutoServicoTest {
         request.setArquivoUri("timbres/joao@tone.com/uuid_arquivo.zip");
         request.setTags(Set.of(GeneroMusical.ROCK));
 
-        when(usuarioRepository.findByEmail("joao@tone.com")).thenReturn(Optional.of(criadorFake));
+        when(usuarioRepository.encontrarPorEmail("joao@tone.com")).thenReturn(Optional.of(criadorFake));
         when(produtoRepositorio.save(any(Produto.class))).thenReturn(produtoFake);
 
         Produto resultado = produtoServico.criarProduto(request, "joao@tone.com");
@@ -123,7 +123,7 @@ class ProdutoServicoTest {
         request.setPreco(BigDecimal.TEN);
         request.setArquivoUri("timbres/x.zip");
 
-        when(usuarioRepository.findByEmail("naoexiste@tone.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.encontrarPorEmail("naoexiste@tone.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> produtoServico.criarProduto(request, "naoexiste@tone.com"))
                 .isInstanceOf(CriadorNaoEncontradoException.class)

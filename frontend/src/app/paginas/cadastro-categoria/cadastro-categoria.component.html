@@ -1,0 +1,56 @@
+<div class="container">
+  <div class="card">
+    <h2 class="titulo">Cadastro de Categoria</h2>
+    
+    <div *ngIf="mensagemSucesso" class="alerta sucesso">{{ mensagemSucesso }}</div>
+    <div *ngIf="mensagemErro" class="alerta erro">{{ mensagemErro }}</div>
+
+    <form [formGroup]="categoriaForm" (ngSubmit)="salvar()" class="formulario">
+      <div class="grupo-campo">
+        <label for="nome">Nome da Categoria</label>
+        <input 
+          id="nome" 
+          type="text" 
+          formControlName="nome" 
+          placeholder="Ex: Pedaleira" 
+          class="input-estilizado"
+        />
+        <div *ngIf="categoriaForm.get('nome')?.touched && categoriaForm.get('nome')?.invalid" class="erro-texto">
+          Nome da categoria é obrigatório.
+        </div>
+      </div>
+
+      <div class="subcategorias-header">
+        <h3>Subcategorias (Opcional)</h3>
+        <button type="button" class="btn-secundario" (click)="adicionarSubcategoria()">
+          + Adicionar Subcategoria
+        </button>
+      </div>
+
+      <div formArrayName="subcategorias" class="lista-subcategorias">
+        <div 
+          *ngFor="let sub of subcategorias.controls; let i = index" 
+          [formGroupName]="i" 
+          class="subcategoria-item"
+        >
+          <div class="grupo-campo grow">
+            <input 
+              type="text" 
+              formControlName="nome" 
+              placeholder="Ex: Analógicas" 
+              class="input-estilizado"
+            />
+          </div>
+          <button type="button" class="btn-remover" (click)="removerSubcategoria(i)" title="Remover">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primario" [disabled]="carregando || categoriaForm.invalid">
+        <span *ngIf="!carregando">Salvar Categoria</span>
+        <span *ngIf="carregando">Salvando...</span>
+      </button>
+    </form>
+  </div>
+</div>

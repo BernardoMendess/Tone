@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(AutenticacaoController.class)
 @Import(ConfiguracaoSeguranca.class)
 @DisplayName("AutenticacaoController — Testes de Integração")
-class AutenticacaoControllerTest {
+    class AutenticacaoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -64,7 +64,7 @@ class AutenticacaoControllerTest {
 
         Usuario usuarioMock = new Usuario();
         usuarioMock.setNomeCompleto("João Silva");
-        when(usuarioService.cadastrar(any(Usuario.class))).thenReturn(usuarioMock);
+        when(usuarioService.cadastrar(Usuario.class.newInstance())).thenReturn(usuarioMock);
 
         mockMvc.perform(post("/api/auth/cadastrar")
                         .contentType(MediaType.APPLICATION_JSON)

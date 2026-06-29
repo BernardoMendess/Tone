@@ -109,7 +109,6 @@ class UsuarioServiceTest {
         when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
         when(codificador.matches("Senha@123", usuarioBase.getSenha())).thenReturn(true);
         when(jwtUtil.gerarToken(usuarioBase)).thenReturn("token_jwt");
-        when(usuarioRepository.save(any())).thenReturn(usuarioBase);
 
         String token = usuarioService.autenticar("joao@example.com", "Senha@123");
 
@@ -142,7 +141,6 @@ class UsuarioServiceTest {
         usuarioBase.setEmailVerificado(false);
         when(usuarioRepository.encontrarPorEmail("joao@example.com")).thenReturn(Optional.of(usuarioBase));
         when(codificador.matches(anyString(), any())).thenReturn(true);
-        when(usuarioRepository.save(any())).thenReturn(usuarioBase);
 
         assertThrows(EmailNaoVerificadoException.class,
                 () -> usuarioService.autenticar("joao@example.com", "Senha@123"));

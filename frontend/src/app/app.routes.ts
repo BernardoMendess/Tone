@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   {
@@ -17,6 +18,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./paginas/cadastro-produto/cadastro-produto.component').then((m) => m.CadastroProdutoComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'categorias/nova',
+    loadComponent: () =>
+      import('./paginas/cadastro-categoria/cadastro-categoria.component').then((m) => m.CadastroCategoriaComponent),
+    canActivate: [adminGuard]
   },
   {
     path: 'verificar-email',

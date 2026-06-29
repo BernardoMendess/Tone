@@ -2,6 +2,7 @@ package com.tone.controlador.excecao;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,8 +18,18 @@ import java.util.Map;
 @RestControllerAdvice
 public class TratadorExcecoes {
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> tratarAcessoNegado(AccessDeniedException ex) {
+        return criarResposta(HttpStatus.FORBIDDEN, "Acesso negado: você não tem permissão para realizar esta ação.");
+    }
+
     @ExceptionHandler(EmailJaCadastradoException.class)
     public ResponseEntity<Map<String, Object>> tratarEmailDuplicado(EmailJaCadastradoException ex) {
+        return criarResposta(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(CategoriaJaCadastradaException.class)
+    public ResponseEntity<Map<String, Object>> tratarCategoriaDuplicada(CategoriaJaCadastradaException ex) {
         return criarResposta(HttpStatus.CONFLICT, ex.getMessage());
     }
 
