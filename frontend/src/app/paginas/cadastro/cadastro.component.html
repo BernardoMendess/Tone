@@ -1,0 +1,200 @@
+<section class="auth-page" id="pagina-cadastro">
+  <div class="auth-card cadastro-card">
+
+    <div class="auth-brand">
+      <span class="brand-nome">tone</span>
+      <p class="brand-tagline">Crie sua conta e comece a explorar</p>
+    </div>
+
+    <!-- Estado: Cadastro realizado com sucesso -->
+    <div *ngIf="cadastroRealizado" class="estado-sucesso" id="sucesso-cadastro">
+      <div class="sucesso-icone">✉</div>
+      <h2 class="sucesso-titulo">Verifique seu e-mail!</h2>
+      <p class="sucesso-texto">
+        Enviamos um link de confirmação para<br>
+        <strong>{{ emailCadastrado }}</strong>
+      </p>
+      <p class="sucesso-subtexto">
+        Clique no link para ativar sua conta. O link expira em 24 horas.
+      </p>
+      <a routerLink="/login" class="btn-primario" id="btn-ir-login">Ir para o Login</a>
+    </div>
+
+    <!-- Estado: Formulário -->
+    <ng-container *ngIf="!cadastroRealizado">
+
+      <h1 class="auth-titulo">Criar conta</h1>
+
+      <div class="alerta alerta-erro" *ngIf="erroGeral" id="aviso-erro-cadastro">
+        <span class="alerta-icone">✕</span>
+        <span>{{ erroGeral }}</span>
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="cadastrar()" novalidate id="form-cadastro">
+
+        <!-- Nome Completo -->
+        <div class="campo-grupo">
+          <label for="cadastro-nome" class="campo-label">Nome Completo</label>
+          <input
+            id="cadastro-nome"
+            type="text"
+            formControlName="nomeCompleto"
+            class="campo-input"
+            [class.campo-erro]="nomeCompleto?.invalid && nomeCompleto?.touched"
+            placeholder="João da Silva"
+            autocomplete="name"
+          />
+          <span class="campo-mensagem-erro" *ngIf="nomeCompleto?.touched && nomeCompleto?.hasError('required')">
+            Nome completo é obrigatório
+          </span>
+          <span class="campo-mensagem-erro" *ngIf="nomeCompleto?.touched && nomeCompleto?.hasError('minlength')">
+            Nome deve ter no mínimo 3 caracteres
+          </span>
+        </div>
+
+        <!-- E-mail -->
+        <div class="campo-grupo">
+          <label for="cadastro-email" class="campo-label">E-mail</label>
+          <input
+            id="cadastro-email"
+            type="email"
+            formControlName="email"
+            class="campo-input"
+            [class.campo-erro]="email?.invalid && email?.touched"
+            placeholder="seu@email.com"
+            autocomplete="email"
+          />
+          <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('required')">
+            E-mail é obrigatório
+          </span>
+          <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('email')">
+            E-mail inválido
+          </span>
+          <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('jaExiste')">
+            Este e-mail já está cadastrado
+          </span>
+        </div>
+
+        <!-- CPF -->
+        <div class="campo-grupo">
+          <label for="cadastro-cpf" class="campo-label">CPF</label>
+          <input
+            id="cadastro-cpf"
+            type="text"
+            formControlName="cpf"
+            class="campo-input"
+            [class.campo-erro]="cpf?.invalid && cpf?.touched"
+            placeholder="000.000.000-00"
+            maxlength="14"
+            (input)="formatarCpf($event)"
+            autocomplete="off"
+          />
+          <span class="campo-mensagem-erro" *ngIf="cpf?.touched && cpf?.hasError('required')">
+            CPF é obrigatório
+          </span>
+          <span class="campo-mensagem-erro" *ngIf="cpf?.touched && cpf?.hasError('jaExiste')">
+            Este CPF já está cadastrado
+          </span>
+        </div>
+
+        <!-- Senha -->
+        <div class="campo-grupo">
+          <label for="cadastro-senha" class="campo-label">Senha</label>
+          <div class="campo-senha-wrapper">
+            <input
+              id="cadastro-senha"
+              [type]="senhaVisivel ? 'text' : 'password'"
+              formControlName="senha"
+              class="campo-input"
+              [class.campo-erro]="senha?.invalid && senha?.touched"
+              placeholder="••••••••"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="btn-olho"
+              (click)="alternarSenhaVisivel()"
+              [attr.aria-label]="senhaVisivel ? 'Ocultar senha' : 'Exibir senha'"
+              id="btn-alternar-senha-cadastro"
+            >
+              {{ senhaVisivel ? '🙈' : '👁' }}
+            </button>
+          </div>
+
+          <!-- Checklist de critérios da senha -->
+          <div class="checklist-senha" *ngIf="senha?.dirty || senha?.touched" id="checklist-senha">
+            <div class="criterio" [class.criterio-ok]="criteriosSenha.tamanhoMinimo">
+              <span class="criterio-icone">{{ criteriosSenha.tamanhoMinimo ? '✓' : '○' }}</span>
+              Mínimo 8 caracteres
+            </div>
+            <div class="criterio" [class.criterio-ok]="criteriosSenha.temMaiuscula">
+              <span class="criterio-icone">{{ criteriosSenha.temMaiuscula ? '✓' : '○' }}</span>
+              Uma letra maiúscula
+            </div>
+            <div class="criterio" [class.criterio-ok]="criteriosSenha.temMinuscula">
+              <span class="criterio-icone">{{ criteriosSenha.temMinuscula ? '✓' : '○' }}</span>
+              Uma letra minúscula
+            </div>
+            <div class="criterio" [class.criterio-ok]="criteriosSenha.temNumero">
+              <span class="criterio-icone">{{ criteriosSenha.temNumero ? '✓' : '○' }}</span>
+              Um número
+            </div>
+            <div class="criterio" [class.criterio-ok]="criteriosSenha.temEspecial">
+              <span class="criterio-icone">{{ criteriosSenha.temEspecial ? '✓' : '○' }}</span>
+              Um caractere especial (!&#64;#$*...)
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmação de Senha -->
+        <div class="campo-grupo">
+          <label for="cadastro-confirmacao" class="campo-label">Confirmar Senha</label>
+          <div class="campo-senha-wrapper">
+            <input
+              id="cadastro-confirmacao"
+              [type]="confirmacaoVisivel ? 'text' : 'password'"
+              formControlName="confirmacaoSenha"
+              class="campo-input"
+              [class.campo-erro]="(confirmacaoSenha?.touched && confirmacaoSenha?.hasError('required')) || (formulario.hasError('senhasNaoConferem') && confirmacaoSenha?.touched)"
+              placeholder="••••••••"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="btn-olho"
+              (click)="alternarConfirmacaoVisivel()"
+              [attr.aria-label]="confirmacaoVisivel ? 'Ocultar confirmação' : 'Exibir confirmação'"
+              id="btn-alternar-confirmacao"
+            >
+              {{ confirmacaoVisivel ? '🙈' : '👁' }}
+            </button>
+          </div>
+          <span class="campo-mensagem-erro" *ngIf="confirmacaoSenha?.touched && confirmacaoSenha?.hasError('required')">
+            Confirmação de senha é obrigatória
+          </span>
+          <span class="campo-mensagem-erro" *ngIf="formulario.hasError('senhasNaoConferem') && confirmacaoSenha?.touched">
+            As senhas não conferem
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          class="btn-primario"
+          [disabled]="carregando"
+          id="btn-criar-conta"
+        >
+          <span *ngIf="!carregando">Criar conta</span>
+          <span *ngIf="carregando" class="spinner"></span>
+        </button>
+
+      </form>
+
+      <p class="auth-rodape">
+        Já tem conta?
+        <a routerLink="/login" id="link-login">Entrar</a>
+      </p>
+
+    </ng-container>
+
+  </div>
+</section>

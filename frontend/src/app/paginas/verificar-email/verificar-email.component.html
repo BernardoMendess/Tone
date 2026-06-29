@@ -1,0 +1,37 @@
+<section class="auth-page" id="pagina-verificar-email">
+  <div class="auth-card verificar-card">
+
+    <!-- Estado: Carregando -->
+    <div *ngIf="estado === 'carregando'" class="estado-central" id="estado-carregando">
+      <div class="loader-grande"></div>
+      <p class="estado-texto">Verificando seu e-mail...</p>
+    </div>
+
+    <!-- Estado: Sucesso -->
+    <div *ngIf="estado === 'sucesso'" class="estado-central" id="estado-sucesso">
+      <div class="estado-icone sucesso">✓</div>
+      <h1 class="estado-titulo">E-mail verificado!</h1>
+      <p class="estado-texto">
+        Sua conta foi ativada com sucesso.<br>
+        Agora você pode fazer login na plataforma.
+      </p>
+      <a routerLink="/login" class="btn-primario" id="btn-ir-login-verificacao">
+        Fazer Login
+      </a>
+    </div>
+
+    <!-- Estado: Erro -->
+    <div *ngIf="estado === 'erro'" class="estado-central" id="estado-erro">
+      <div class="estado-icone erro">✕</div>
+      <h1 class="estado-titulo">Link inválido</h1>
+      <p class="estado-texto">
+        Este link de verificação é inválido ou expirou.<br>
+        Links são válidos por 24 horas após o cadastro.
+      </p>
+      <a routerLink="/cadastro" class="btn-secundario" id="btn-novo-cadastro">
+        Criar nova conta
+      </a>
+    </div>
+
+  </div>
+</section>
