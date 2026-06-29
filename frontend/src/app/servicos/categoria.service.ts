@@ -35,4 +35,8 @@ export class CategoriaService {
       withCredentials: true
     });
   }
+
+  listarCategorias(): Observable<CategoriaResponse[]> {
+    return this.http.get<CategoriaResponse[]>(this.apiUrl);
+  }
 }

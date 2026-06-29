@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpEventType } from '@angular/common/http';
 import { ProdutoService } from '../../servicos/produto.service';
 import { Router } from '@angular/router';
+import { CategoriaService, CategoriaResponse, SubcategoriaResponse } from '../../servicos/categoria.service';
 
 @Component({
   selector: 'app-cadastro-produto',
@@ -12,7 +13,7 @@ import { Router } from '@angular/router';
   templateUrl: './cadastro-produto.component.html',
   styleUrls: ['./cadastro-produto.component.css']
 })
-export class CadastroProdutoComponent {
+export class CadastroProdutoComponent implements OnInit {
   produtoForm: FormGroup;
   arquivoSelecionado: File | null = null;
   progressoUpload = 0;
@@ -21,16 +22,55 @@ export class CadastroProdutoComponent {
   tagsDisponiveis = ['ROCK', 'METAL', 'NEO_SOUL', 'BLUES', 'POP', 'WORSHIP', 'JAZZ', 'AMBIENT'];
   tagsSelecionadas: string[] = [];
 
+  categorias: CategoriaResponse[] = [];
+  subcategoriasDisponiveis: SubcategoriaResponse[] = [];
+
   constructor(
     private fb: FormBuilder,
     private produtoService: ProdutoService,
+    private categoriaService: CategoriaService,
     private router: Router
   ) {
     this.produtoForm = this.fb.group({
       nome: ['', [Validators.required, Validators.maxLength(150)]],
       descricao: ['', [Validators.required]],
       preco: [0, [Validators.required, Validators.min(0)]],
-      videoUrl: ['']
+      videoUrl: [''],
+      categoriaId: [null, [Validators.required]],
+      subcategoriaId: [null]
+    });
+  }
+
+  ngOnInit(): void {
+    this.categoriaService.listarCategorias().subscribe({
+      next: (categorias) => {
+        this.categorias = categorias;
+      },
+      error: () => {
+        this.mensagemErro = 'Não foi possível carregar as categorias.';
+      }
+    });
+
+    this.produtoForm.get('categoriaId')!.valueChanges.subscribe((categoriaIdStr) => {
+      const categoriaId = categoriaIdStr != null ? Number(categoriaIdStr) : null;
+      const subcategoriaControl = this.produtoForm.get('subcategoriaId')!;
+      subcategoriaControl.setValue(null);
+
+      if (categoriaId) {
+        const categoriaSelecionada = this.categorias.find(c => c.id === categoriaId);
+        this.subcategoriasDisponiveis = categoriaSelecionada?.subcategorias ?? [];
+
+        if (this.subcategoriasDisponiveis.length > 0) {
+          subcategoriaControl.setValidators([Validators.required]);
+        } else {
+          subcategoriaControl.clearValidators();
+        }
+      } else {
+        this.subcategoriasDisponiveis = [];
+        subcategoriaControl.clearValidators();
+      }
+
+      subcategoriaControl.updateValueAndValidity();
     });
   }
 
@@ -84,8 +124,14 @@ export class CadastroProdutoComponent {
               
               // Passo 3: Salvar metadados do produto
               this.statusEnvio = 'SALVANDO_PRODUTO';
+              const formValue = this.produtoForm.value;
               const dadosProduto = {
-                ...this.produtoForm.value,
+                nome: formValue.nome,
+                descricao: formValue.descricao,
+                preco: formValue.preco,
+                videoUrl: formValue.videoUrl,
+                categoriaId: Number(formValue.categoriaId),
+                subcategoriaId: formValue.subcategoriaId ? Number(formValue.subcategoriaId) : undefined,
                 tags: this.tagsSelecionadas,
                 arquivoUri: resUrl.arquivoUri
               };
@@ -97,7 +143,7 @@ export class CadastroProdutoComponent {
                 },
                 error: (err) => {
                   this.statusEnvio = 'ERRO';
-                  this.mensagemErro = 'Erro ao salvar produto.';
+                  this.mensagemErro = err.error?.message || 'Erro ao salvar produto.';
                   console.error(err);
                 }
               });

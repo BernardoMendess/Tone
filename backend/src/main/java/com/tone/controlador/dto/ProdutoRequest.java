@@ -29,6 +29,11 @@ public class ProdutoRequest {
 
     private String videoUrl;
 
+    @NotNull(message = "A categoria é obrigatória")
+    private Long categoriaId;
+
+    private Long subcategoriaId;
+
     public String getNome() {
         return nome;
     }
@@ -75,5 +80,21 @@ public class ProdutoRequest {
 
     public void setVideoUrl(String videoUrl) {
         this.videoUrl = videoUrl;
+    }
+
+    public Long getCategoriaId() {
+        return categoriaId;
+    }
+
+    public void setCategoriaId(Long categoriaId) {
+        this.categoriaId = categoriaId;
+    }
+
+    public Long getSubcategoriaId() {
+        return subcategoriaId;
+    }
+
+    public void setSubcategoriaId(Long subcategoriaId) {
+        this.subcategoriaId = subcategoriaId;
     }
 }

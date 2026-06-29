@@ -5,6 +5,8 @@ export interface ProdutoRequest {
   tags: string[];
   arquivoUri: string;
   videoUrl?: string;
+  categoriaId: number;
+  subcategoriaId?: number;
 }
 
 export interface UploadUrlRequest {

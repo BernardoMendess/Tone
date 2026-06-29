@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoriaServico {
@@ -49,5 +50,17 @@ public class CategoriaServico {
         }
 
         return new CategoriaResponse(categoria.getId(), categoria.getNome(), subcategoriasResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoriaResponse> listarTodas() {
+        return categoriaRepositorio.findAll().stream()
+                .map(categoria -> {
+                    List<SubcategoriaResponse> subs = categoria.getSubcategorias().stream()
+                            .map(sub -> new SubcategoriaResponse(sub.getId(), sub.getNome()))
+                            .collect(Collectors.toList());
+                    return new CategoriaResponse(categoria.getId(), categoria.getNome(), subs);
+                })
+                .collect(Collectors.toList());
     }
 }
