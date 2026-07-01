@@ -1,74 +1,334 @@
-.home-container {
+/* ==========================================
+   MARKETPLACE / HOME
+   ========================================== */
+
+.marketplace-pagina {
+  min-height: 100vh;
+}
+
+/* ==========================================
+   HERO DE BOAS-VINDAS
+   ========================================== */
+
+.marketplace-hero {
+  background: var(--cor-fundo-componente);
+  border-bottom: 1px solid var(--borda-cor);
+  padding: var(--espaco-10) 0;
+}
+
+.marketplace-hero--skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--espaco-10) var(--padding-pagina);
+  max-width: var(--largura-max-conteudo);
+  margin: 0 auto;
+}
+
+.marketplace-hero__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-8);
+}
+
+.marketplace-hero__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+}
+
+.marketplace-hero__saudacao {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-terciario);
+  font-weight: var(--peso-medium);
+}
+
+.marketplace-hero__nome {
+  font-size: clamp(var(--texto-2xl), 3vw, var(--texto-4xl));
+  font-weight: var(--peso-bold);
+  letter-spacing: -0.04em;
+  color: var(--cor-texto-primario);
+}
+
+.marketplace-hero__info {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  margin-top: var(--espaco-1);
+  flex-wrap: wrap;
+}
+
+.marketplace-hero__email {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-terciario);
+}
+
+.marketplace-hero__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.marketplace-hero__btn-publicar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  padding: var(--espaco-2) var(--espaco-5);
+  background: var(--cor-marca-primaria);
+  color: #fff;
+  border: none;
+  border-radius: var(--raio-lg);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semibold);
+  font-family: var(--fonte-principal);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.marketplace-hero__btn-publicar:hover {
+  background: var(--cor-marca-primaria-hover);
+  transform: translateY(-1px);
+}
+
+.marketplace-hero__btn-sair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  padding: var(--espaco-2) var(--espaco-4);
+  background: transparent;
+  color: var(--cor-texto-terciario);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-lg);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  font-family: var(--fonte-principal);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.marketplace-hero__btn-sair:hover {
+  color: var(--cor-texto-primario);
+  border-color: var(--borda-cor-hover);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ==========================================
+   CONTEÚDO PRINCIPAL
+   ========================================== */
+
+.marketplace-conteudo {
+  padding-top: var(--espaco-10);
+  padding-bottom: var(--espaco-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-12);
+}
+
+.marketplace-secao-titulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semibold);
+  color: var(--cor-texto-primario);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--espaco-5);
+}
+
+/* ==========================================
+   GRID DE AÇÕES RÁPIDAS
+   ========================================== */
+
+.acoes-rapidas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaco-4);
+}
+
+.acao-card {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-4);
+  padding: var(--espaco-5) var(--espaco-6);
+  background: var(--cor-fundo-card);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-xl);
+  text-decoration: none;
+  transition: var(--transicao-elevacao), border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.acao-card:hover:not(.acao-card--em-breve) {
+  transform: translateY(-2px);
+  border-color: var(--borda-cor-hover);
+  box-shadow: var(--sombra-sm);
+}
+
+.acao-card--em-breve {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.acao-card__icone {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--raio-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
-  background-color: var(--cor-fundo);
+  flex-shrink: 0;
 }
 
-.home-card {
-  background: var(--cor-superficie);
-  border: 1px solid var(--cor-borda);
-  border-radius: 8px;
-  padding: 2.5rem;
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+.acao-card__icone--roxo {
+  background: var(--cor-marca-primaria-sutil);
+  color: var(--cor-marca-primaria-light);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.acao-card__icone--verde {
+  background: var(--cor-marca-secundaria-sutil);
+  color: var(--cor-marca-secundaria);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.acao-card__icone--muted {
+  background: var(--cor-fundo-elevado);
+  color: var(--cor-texto-desabilitado);
+  border: 1px solid var(--borda-cor);
+}
+
+.acao-card__info {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--espaco-1);
 }
 
-.auth-brand {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.brand-nome {
-  font-family: 'Outfit', sans-serif;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--cor-primaria);
-  letter-spacing: -0.05em;
-}
-
-h1 {
-  font-size: 1.5rem;
+.acao-card__titulo {
+  font-size: var(--texto-base);
+  font-weight: var(--peso-semibold);
   color: var(--cor-texto-primario);
-  text-align: center;
-  margin: 0;
+  letter-spacing: -0.01em;
 }
 
-.usuario-info {
-  background: var(--cor-fundo);
-  padding: 1.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--cor-borda);
+.acao-card__descricao {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-terciario);
+  line-height: var(--linha-relaxada);
 }
 
-.usuario-info p {
-  margin: 0.5rem 0;
+.acao-card__seta {
+  color: var(--cor-texto-desabilitado);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.acao-card:hover .acao-card__seta {
+  transform: translateX(3px);
   color: var(--cor-texto-secundario);
 }
 
-.usuario-info strong {
+/* ==========================================
+   MARKETPLACE EM CONSTRUÇÃO
+   ========================================== */
+
+.em-construcao__card {
+  background: var(--cor-fundo-card);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-2xl);
+  padding: var(--espaco-16) var(--espaco-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--espaco-5);
+}
+
+.em-construcao__icone {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-fundo-elevado);
+  border: 1px solid var(--borda-cor);
+  color: var(--cor-texto-desabilitado);
+}
+
+.em-construcao__titulo {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-bold);
+  letter-spacing: -0.03em;
   color: var(--cor-texto-primario);
 }
 
-.btn-primario {
-  margin-top: 1rem;
+.em-construcao__descricao {
+  font-size: var(--texto-base);
+  color: var(--cor-texto-terciario);
+  line-height: var(--linha-relaxada);
+  max-width: 440px;
 }
 
-.spinner-grande {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(0, 0, 0, 0.1);
-  border-left-color: var(--cor-primaria);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.em-construcao__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  padding: var(--espaco-3) var(--espaco-6);
+  background: var(--cor-marca-primaria);
+  color: #fff;
+  border: none;
+  border-radius: var(--raio-lg);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semibold);
+  font-family: var(--fonte-principal);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  margin-top: var(--espaco-3);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.em-construcao__btn:hover {
+  background: var(--cor-marca-primaria-hover);
+  transform: translateY(-1px);
+}
+
+/* ==========================================
+   SKELETON DA GRADE
+   ========================================== */
+
+.marketplace-grid-skeleton {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espaco-5);
+  padding: var(--espaco-10) var(--padding-pagina);
+  max-width: var(--largura-max-conteudo);
+  margin: 0 auto;
+}
+
+/* ==========================================
+   RESPONSIVIDADE
+   ========================================== */
+
+@media (max-width: 768px) {
+  .marketplace-hero__container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espaco-5);
+  }
+
+  .acoes-rapidas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-grid-skeleton {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .marketplace-grid-skeleton {
+    grid-template-columns: 1fr;
+  }
 }

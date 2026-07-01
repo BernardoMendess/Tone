@@ -1,0 +1,4 @@
+.layout__conteudo {
+  min-height: calc(100vh - var(--altura-navbar));
+  padding-top: var(--altura-navbar);
+}

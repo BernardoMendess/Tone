@@ -1,20 +1,115 @@
-<div class="home-container" *ngIf="carregando">
-  <div class="spinner-grande"></div>
+<!-- Estado: Carregando com Skeleton -->
+<div class="marketplace-pagina" *ngIf="carregando">
+  <div class="marketplace-hero marketplace-hero--skeleton">
+    <div class="skeleton" style="height:28px;width:220px;margin-bottom:8px"></div>
+    <div class="skeleton" style="height:16px;width:180px"></div>
+  </div>
+  <div class="container marketplace-conteudo">
+    <div class="marketplace-grid-skeleton">
+      <div class="skeleton skeleton--card" *ngFor="let i of [1,2,3,4,5,6]"></div>
+    </div>
+  </div>
 </div>
 
-<div class="home-container" *ngIf="!carregando && usuario">
-  <div class="home-card">
-    <div class="auth-brand">
-      <span class="brand-nome">tone</span>
+<!-- Estado: Autenticado -->
+<div class="marketplace-pagina animar-entrada" *ngIf="!carregando && usuario">
+
+  <!-- Hero de boas-vindas -->
+  <section class="marketplace-hero">
+    <div class="container marketplace-hero__container">
+      <div class="marketplace-hero__texto">
+        <span class="marketplace-hero__saudacao">{{ saudacao }},</span>
+        <h1 class="marketplace-hero__nome">{{ usuario.nomeCompleto }}</h1>
+        <p class="marketplace-hero__info">
+          <span class="badge badge--marca">{{ usuario.tipoPerfil }}</span>
+          <span class="marketplace-hero__email">{{ usuario.email }}</span>
+        </p>
+      </div>
+
+      <div class="marketplace-hero__acoes">
+        <a routerLink="/cadastro-produto" class="marketplace-hero__btn-publicar" *ngIf="podePublicar" id="btn-publicar-produto">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Publicar produto
+        </a>
+        <button class="marketplace-hero__btn-sair" (click)="logout()" id="btn-logout">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </button>
+      </div>
     </div>
-    
-    <h1>Bem-vindo, {{ usuario.nomeCompleto }}!</h1>
-    
-    <div class="usuario-info">
-      <p><strong>E-mail:</strong> {{ usuario.email }}</p>
-      <p><strong>Perfil:</strong> {{ usuario.tipoPerfil }}</p>
-    </div>
-    
-    <button class="btn-primario" (click)="logout()">Sair</button>
+  </section>
+
+  <!-- Conteúdo principal -->
+  <div class="container marketplace-conteudo">
+
+    <!-- Cards de ações rápidas -->
+    <section class="marketplace-acoes-rapidas" id="acoes-rapidas">
+      <h2 class="marketplace-secao-titulo">Acesse rápido</h2>
+      <div class="acoes-rapidas-grid">
+
+        <a routerLink="/cadastro-produto" class="acao-card" *ngIf="podePublicar" id="acao-publicar">
+          <div class="acao-card__icone acao-card__icone--roxo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="acao-card__info">
+            <h3 class="acao-card__titulo">Publicar produto</h3>
+            <p class="acao-card__descricao">Adicione captures, presets ou IRs ao marketplace</p>
+          </div>
+          <svg class="acao-card__seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+
+        <a routerLink="/categorias/nova" class="acao-card" *ngIf="usuario.tipoPerfil === 'ADMIN'" id="acao-categorias">
+          <div class="acao-card__icone acao-card__icone--verde">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="acao-card__info">
+            <h3 class="acao-card__titulo">Gerenciar categorias</h3>
+            <p class="acao-card__descricao">Criar e administrar categorias do marketplace</p>
+          </div>
+          <svg class="acao-card__seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+
+        <div class="acao-card acao-card--em-breve">
+          <div class="acao-card__icone acao-card__icone--muted">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <div class="acao-card__info">
+            <h3 class="acao-card__titulo">Explorar produtos</h3>
+            <p class="acao-card__descricao">Navegue pelo catálogo de timbres disponíveis</p>
+          </div>
+          <span class="badge badge--marca">Em breve</span>
+        </div>
+
+        <div class="acao-card acao-card--em-breve">
+          <div class="acao-card__icone acao-card__icone--muted">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div class="acao-card__info">
+            <h3 class="acao-card__titulo">Minha biblioteca</h3>
+            <p class="acao-card__descricao">Acesse seus produtos comprados</p>
+          </div>
+          <span class="badge badge--marca">Em breve</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Estado vazio / placeholder da plataforma -->
+    <section class="marketplace-em-construcao">
+      <div class="em-construcao__card">
+        <div class="em-construcao__icone">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <h2 class="em-construcao__titulo">Marketplace em construção</h2>
+        <p class="em-construcao__descricao">
+          O catálogo de produtos está sendo construído.<br>
+          Por enquanto, você pode publicar seus próprios timbres.
+        </p>
+        <a routerLink="/cadastro-produto" class="em-construcao__btn" *ngIf="podePublicar">
+          Publicar meu primeiro produto
+        </a>
+      </div>
+    </section>
+
   </div>
 </div>

@@ -1,0 +1,362 @@
+/* ==========================================
+   NAVBAR
+   ========================================== */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-navbar);
+  background: rgba(8, 8, 8, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--borda-cor);
+  height: var(--altura-navbar);
+}
+
+.navbar__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  max-width: var(--largura-max-conteudo);
+  margin: 0 auto;
+  padding: 0 var(--padding-pagina);
+  gap: var(--espaco-6);
+}
+
+/* ==========================================
+   LOGO
+   ========================================== */
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.navbar__logo-texto {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-bold);
+  color: var(--cor-texto-primario);
+  letter-spacing: -0.04em;
+  transition: color 0.2s ease;
+}
+
+.navbar__logo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gradiente-marca);
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.navbar__logo:hover .navbar__logo-texto {
+  color: var(--cor-marca-primaria-light);
+}
+
+/* ==========================================
+   LINKS DESKTOP
+   ========================================== */
+
+.navbar__links {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  flex: 1;
+}
+
+.navbar__link {
+  padding: var(--espaco-2) var(--espaco-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-secundario);
+  border-radius: var(--raio-md);
+  transition: color 0.2s ease, background-color 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar__link:hover {
+  color: var(--cor-texto-primario);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar__link--ativo {
+  color: var(--cor-texto-primario);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ==========================================
+   ÁREA DE AÇÕES
+   ========================================== */
+
+.navbar__acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  flex-shrink: 0;
+}
+
+/* ==========================================
+   AVATAR / MENU USUÁRIO
+   ========================================== */
+
+.navbar__usuario {
+  position: relative;
+}
+
+.navbar__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cor-marca-primaria-sutil);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transicao-rapida);
+  padding: 0;
+}
+
+.navbar__avatar:hover {
+  border-color: var(--cor-marca-primaria);
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.navbar__avatar-iniciais {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-bold);
+  color: var(--cor-marca-primaria-light);
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================
+   DROPDOWN DO USUÁRIO
+   ========================================== */
+
+.navbar__dropdown {
+  position: absolute;
+  top: calc(100% + var(--espaco-3));
+  right: 0;
+  min-width: 220px;
+  background: var(--cor-fundo-card);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-xl);
+  padding: var(--espaco-2);
+  box-shadow: var(--sombra-xl);
+  animation: fadeInDown 0.18s ease;
+  z-index: var(--z-dropdown);
+}
+
+.navbar__dropdown-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  padding: var(--espaco-3) var(--espaco-4);
+}
+
+.navbar__dropdown-nome {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semibold);
+  color: var(--cor-texto-primario);
+}
+
+.navbar__dropdown-email {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-terciario);
+}
+
+.navbar__dropdown-perfil {
+  margin-top: var(--espaco-1);
+  align-self: flex-start;
+}
+
+.navbar__dropdown-divisor {
+  height: 1px;
+  background: var(--borda-cor);
+  margin: var(--espaco-2) 0;
+}
+
+.navbar__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  width: 100%;
+  padding: var(--espaco-2) var(--espaco-4);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-secundario);
+  border-radius: var(--raio-md);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.navbar__dropdown-item:hover {
+  color: var(--cor-texto-primario);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar__dropdown-item--perigo {
+  color: var(--cor-erro);
+}
+
+.navbar__dropdown-item--perigo:hover {
+  color: var(--cor-erro);
+  background: var(--cor-erro-sutil);
+}
+
+/* ==========================================
+   BOTÃO HAMBURGER (MOBILE)
+   ========================================== */
+
+.navbar__hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--raio-md);
+  cursor: pointer;
+  border: 1px solid var(--borda-cor);
+  background: transparent;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.navbar__hamburger:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar__hamburger-linha {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: var(--cor-texto-secundario);
+  border-radius: 2px;
+  box-shadow:
+    0 -5px 0 var(--cor-texto-secundario),
+    0  5px 0 var(--cor-texto-secundario);
+  transition: var(--transicao-media);
+}
+
+.navbar__hamburger-linha--ativo {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ==========================================
+   MENU MOBILE
+   ========================================== */
+
+.navbar__mobile {
+  position: fixed;
+  top: var(--altura-navbar);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(8, 8, 8, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: calc(var(--z-navbar) - 1);
+  animation: fadeIn 0.2s ease;
+  border-top: 1px solid var(--borda-cor);
+}
+
+.navbar__mobile-container {
+  display: flex;
+  flex-direction: column;
+  padding: var(--espaco-6) var(--padding-pagina);
+  gap: var(--espaco-2);
+}
+
+.navbar__mobile-link {
+  display: block;
+  padding: var(--espaco-4);
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-secundario);
+  border-radius: var(--raio-lg);
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.navbar__mobile-link:hover {
+  color: var(--cor-texto-primario);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navbar__mobile-divisor {
+  height: 1px;
+  background: var(--borda-cor);
+  margin: var(--espaco-4) 0;
+}
+
+.navbar__mobile-usuario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espaco-4);
+  background: var(--cor-fundo-card);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-lg);
+}
+
+.navbar__mobile-usuario-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+}
+
+.navbar__mobile-usuario-info span {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semibold);
+  color: var(--cor-texto-primario);
+}
+
+.navbar__mobile-usuario-email {
+  font-size: var(--texto-xs) !important;
+  font-weight: var(--peso-regular) !important;
+  color: var(--cor-texto-terciario) !important;
+}
+
+.navbar__mobile-sair {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-erro);
+  padding: var(--espaco-2) var(--espaco-4);
+  border: 1px solid var(--cor-erro-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-erro-sutil);
+  cursor: pointer;
+  transition: var(--transicao-rapida);
+}
+
+.navbar__mobile-sair:hover {
+  background: rgba(248, 113, 113, 0.2);
+}
+
+/* ==========================================
+   RESPONSIVIDADE
+   ========================================== */
+
+@media (max-width: 768px) {
+  .navbar__links,
+  .navbar__acoes {
+    display: none;
+  }
+
+  .navbar__hamburger {
+    display: flex;
+  }
+}

@@ -1,14 +1,190 @@
-@import 'styles/tema.css';
+/* ============================================================
+   Estilos Globais — Tone Marketplace
+   ============================================================ */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import 'styles/tema.css';
+@import 'styles/animacoes.css';
+
+/* ==========================================
+   RESET E BASE
+   ========================================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 html, body {
   height: 100%;
   background-color: var(--cor-fundo-principal);
   color: var(--cor-texto-primario);
+  font-family: var(--fonte-principal);
+  font-size: 16px;
+  line-height: var(--linha-normal);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================
+   SCROLLBAR CUSTOMIZADA (webkit)
+   ========================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cor-fundo-componente);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cor-fundo-borda);
+  border-radius: var(--raio-completo);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cor-texto-terciario);
+}
+
+/* ==========================================
+   FOCO ACESSÍVEL
+   ========================================== */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cor-marca-primaria);
+  outline-offset: 3px;
+  border-radius: var(--raio-xs);
+}
+
+/* ==========================================
+   TIPOGRAFIA BASE
+   ========================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--fonte-principal);
+  font-weight: var(--peso-bold);
+  color: var(--cor-texto-primario);
+  line-height: var(--linha-apertada);
+  letter-spacing: -0.02em;
+}
+
+p {
+  color: var(--cor-texto-secundario);
+  line-height: var(--linha-relaxada);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transicao-cor);
+}
+
+/* ==========================================
+   ELEMENTOS DE FORMULÁRIO BASE
+   ========================================== */
+input, textarea, select {
+  font-family: var(--fonte-principal);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-primario);
+}
+
+button {
+  font-family: var(--fonte-principal);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* ==========================================
+   UTILITÁRIOS GLOBAIS
+   ========================================== */
+
+/* Container centralizado */
+.container {
+  width: 100%;
+  max-width: var(--largura-max-conteudo);
+  margin: 0 auto;
+  padding: 0 var(--padding-pagina);
+}
+
+.container--estreito {
+  max-width: var(--largura-max-estreito);
+}
+
+.container--medio {
+  max-width: var(--largura-max-medio);
+}
+
+/* Texto com gradiente da marca */
+.texto-gradiente {
+  background: var(--gradiente-marca);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Oculto visualmente mas acessível para leitores de tela */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Divisor horizontal */
+.divisor {
+  width: 100%;
+  height: 1px;
+  background: var(--borda-cor);
+  margin: var(--espaco-8) 0;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--espaco-1) var(--espaco-3);
+  border-radius: var(--raio-completo);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medium);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badge--marca {
+  background: var(--cor-marca-primaria-sutil);
+  color: var(--cor-marca-primaria-light);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.badge--sucesso {
+  background: var(--cor-sucesso-sutil);
+  color: var(--cor-sucesso);
+  border: 1px solid var(--cor-sucesso-borda);
+}
+
+/* Skeleton base */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--cor-fundo-card) 0%,
+    var(--cor-fundo-borda) 50%,
+    var(--cor-fundo-card) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--raio-md);
 }
