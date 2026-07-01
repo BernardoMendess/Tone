@@ -1,98 +1,119 @@
-<section class="auth-page" id="pagina-login">
-  <div class="auth-card">
+<section class="auth-pagina" id="pagina-login">
 
-    <div class="auth-brand">
-      <span class="brand-nome">tone</span>
-      <p class="brand-tagline">Seu marketplace de ativos de áudio</p>
-    </div>
-
-    <h1 class="auth-titulo">Entrar na sua conta</h1>
-
-    <!-- Erro: e-mail não verificado -->
-    <div class="alerta alerta-aviso" *ngIf="erroEmailNaoVerificado" id="aviso-email-nao-verificado">
-      <span class="alerta-icone">✉</span>
-      <span>E-mail ainda não verificado. Verifique sua caixa de entrada e clique no link de confirmação.</span>
-    </div>
-
-    <!-- Erro: conta bloqueada por excesso de tentativas -->
-    <div class="alerta alerta-erro" *ngIf="erroContaBloqueada" id="aviso-conta-bloqueada">
-      <span class="alerta-icone">🔒</span>
-      <span>{{ erroGeral }}</span>
-    </div>
-
-    <!-- Erro geral -->
-    <div class="alerta alerta-erro" *ngIf="erroGeral && !erroContaBloqueada" id="aviso-erro-geral">
-      <span class="alerta-icone">✕</span>
-      <span>{{ erroGeral }}</span>
-    </div>
-
-
-    <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate id="form-login">
-
-      <!-- E-mail -->
-      <div class="campo-grupo">
-        <label for="login-email" class="campo-label">E-mail</label>
-        <input
-          id="login-email"
-          type="email"
-          formControlName="email"
-          class="campo-input"
-          [class.campo-erro]="email?.invalid && email?.touched"
-          placeholder="seu@email.com"
-          autocomplete="email"
-        />
-        <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('required')">
-          E-mail é obrigatório
-        </span>
-        <span class="campo-mensagem-erro" *ngIf="email?.touched && email?.hasError('email')">
-          E-mail inválido
-        </span>
+  <!-- Lado esquerdo — Branding (desktop) -->
+  <div class="auth-branding" aria-hidden="true">
+    <div class="auth-branding__conteudo">
+      <a routerLink="/" class="auth-branding__logo">
+        <span class="auth-branding__logo-texto">tone</span>
+        <span class="auth-branding__logo-dot"></span>
+      </a>
+      <blockquote class="auth-branding__quote">
+        "O timbre certo muda tudo."
+      </blockquote>
+      <div class="auth-branding__decoracao">
+        <div class="auth-branding__onda auth-branding__onda--1"></div>
+        <div class="auth-branding__onda auth-branding__onda--2"></div>
+        <div class="auth-branding__onda auth-branding__onda--3"></div>
       </div>
-
-      <!-- Senha -->
-      <div class="campo-grupo">
-        <label for="login-senha" class="campo-label">Senha</label>
-        <div class="campo-senha-wrapper">
-          <input
-            id="login-senha"
-            [type]="senhaVisivel ? 'text' : 'password'"
-            formControlName="senha"
-            class="campo-input"
-            [class.campo-erro]="senha?.invalid && senha?.touched"
-            placeholder="••••••••"
-            autocomplete="current-password"
-          />
-          <button
-            type="button"
-            class="btn-olho"
-            (click)="alternarSenhaVisivel()"
-            [attr.aria-label]="senhaVisivel ? 'Ocultar senha' : 'Exibir senha'"
-            id="btn-alternar-senha-login"
-          >
-            {{ senhaVisivel ? '🙈' : '👁' }}
-          </button>
-        </div>
-        <span class="campo-mensagem-erro" *ngIf="senha?.touched && senha?.hasError('required')">
-          Senha é obrigatória
-        </span>
-      </div>
-
-      <button
-        type="submit"
-        class="btn-primario"
-        [disabled]="carregando"
-        id="btn-entrar"
-      >
-        <span *ngIf="!carregando">Entrar</span>
-        <span *ngIf="carregando" class="spinner"></span>
-      </button>
-
-    </form>
-
-    <p class="auth-rodape">
-      Não tem conta?
-      <a routerLink="/cadastro" id="link-cadastro">Criar conta</a>
-    </p>
-
+    </div>
   </div>
+
+  <!-- Lado direito — Formulário -->
+  <div class="auth-formulario-area">
+    <div class="auth-card animar-escalar">
+
+      <!-- Logo (mobile only) -->
+      <a routerLink="/" class="auth-card__logo-mobile">
+        <span class="auth-branding__logo-texto">tone</span>
+        <span class="auth-branding__logo-dot"></span>
+      </a>
+
+      <h1 class="auth-card__titulo">Entrar na sua conta</h1>
+      <p class="auth-card__subtitulo">Bem-vindo de volta ao marketplace de timbres.</p>
+
+      <!-- Alerta: e-mail não verificado -->
+      <div class="alerta alerta--aviso animar-entrada-cima" *ngIf="erroEmailNaoVerificado" id="aviso-email-nao-verificado" role="alert">
+        <svg class="alerta__icone" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        E-mail ainda não verificado. Verifique sua caixa de entrada e clique no link de confirmação.
+      </div>
+
+      <!-- Alerta: conta bloqueada -->
+      <div class="alerta alerta--erro animar-entrada-cima" *ngIf="erroContaBloqueada" id="aviso-conta-bloqueada" role="alert">
+        <svg class="alerta__icone" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        {{ erroGeral }}
+      </div>
+
+      <!-- Alerta: erro geral -->
+      <div class="alerta alerta--erro animar-entrada-cima" *ngIf="erroGeral && !erroContaBloqueada" id="aviso-erro-geral" role="alert">
+        <svg class="alerta__icone" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        {{ erroGeral }}
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate id="form-login">
+
+        <!-- E-mail -->
+        <div class="campo-grupo">
+          <label for="login-email" class="campo-label">E-mail</label>
+          <input
+            id="login-email"
+            type="email"
+            formControlName="email"
+            class="campo-input"
+            [class.campo-input--erro]="email?.invalid && email?.touched"
+            placeholder="seu@email.com"
+            autocomplete="email"
+          />
+          <span class="campo-erro-msg" *ngIf="email?.touched && email?.hasError('required')">E-mail é obrigatório</span>
+          <span class="campo-erro-msg" *ngIf="email?.touched && email?.hasError('email')">E-mail inválido</span>
+        </div>
+
+        <!-- Senha -->
+        <div class="campo-grupo">
+          <label for="login-senha" class="campo-label">Senha</label>
+          <div class="campo-senha-wrapper">
+            <input
+              id="login-senha"
+              [type]="senhaVisivel ? 'text' : 'password'"
+              formControlName="senha"
+              class="campo-input"
+              [class.campo-input--erro]="senha?.invalid && senha?.touched"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="campo-senha-olho"
+              (click)="alternarSenhaVisivel()"
+              [attr.aria-label]="senhaVisivel ? 'Ocultar senha' : 'Exibir senha'"
+              id="btn-alternar-senha-login"
+            >
+              <!-- Olho aberto -->
+              <svg *ngIf="!senhaVisivel" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <!-- Olho fechado -->
+              <svg *ngIf="senhaVisivel" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <span class="campo-erro-msg" *ngIf="senha?.touched && senha?.hasError('required')">Senha é obrigatória</span>
+        </div>
+
+        <button
+          type="submit"
+          class="btn-submit"
+          [disabled]="carregando"
+          id="btn-entrar"
+        >
+          <span class="spinner spinner--escuro" *ngIf="carregando"></span>
+          <span *ngIf="!carregando">Entrar</span>
+        </button>
+
+      </form>
+
+      <p class="auth-card__rodape">
+        Não tem conta?
+        <a routerLink="/cadastro" id="link-cadastro">Criar conta</a>
+      </p>
+
+    </div>
+  </div>
+
 </section>

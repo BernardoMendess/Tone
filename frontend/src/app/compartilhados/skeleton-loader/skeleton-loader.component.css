@@ -1,0 +1,34 @@
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--cor-fundo-card) 0%,
+    var(--cor-fundo-borda) 50%,
+    var(--cor-fundo-card) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: var(--raio-md);
+}
+
+.skeleton--linha {
+  height: 16px;
+  width: 100%;
+}
+
+.skeleton--texto {
+  height: 14px;
+  width: 70%;
+  border-radius: var(--raio-sm);
+}
+
+.skeleton--avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton--card {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--raio-xl);
+}

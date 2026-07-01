@@ -1,40 +1,195 @@
 /**
- * Sistema de design do Tone — Paleta de cores centralizada.
- * Todas as cores do projeto devem ser referenciadas a partir deste arquivo.
- * Nunca utilize valores hexadecimais diretamente nos componentes.
+ * ============================================================
+ * Sistema de Design — Tone Marketplace
+ * ============================================================
+ * Todos os tokens de design são definidos aqui.
+ * Nunca utilize valores hardcoded diretamente nos componentes.
+ * Sempre referencie as variáveis abaixo.
+ * ============================================================
  */
 
 :root {
-  /* === Fundos === */
-  --cor-fundo-principal: #0A0A0A;
-  --cor-fundo-componente: #121214;
-  --cor-fundo-elevado: #1a1a1e;
-  --cor-fundo-card: #29292e;
-  --cor-fundo-borda: #323238;
 
-  /* === Superfície Glassmorphism === */
-  --cor-glass-bg: rgba(32, 32, 36, 0.6);
-  --cor-glass-borda: rgba(255, 255, 255, 0.05);
+  /* ==========================================
+     FUNDOS
+     ========================================== */
+  --cor-fundo-principal:   #080808;
+  --cor-fundo-componente:  #0f0f0f;
+  --cor-fundo-elevado:     #161618;
+  --cor-fundo-card:        #1c1c1f;
+  --cor-fundo-borda:       #2a2a2e;
 
-  /* === Texto === */
-  --cor-texto-primario: #F4F4F5;
-  --cor-texto-componente: #e1e1e6;
-  --cor-texto-secundario: #a8a8b3;
-  --cor-texto-desabilitado: #7c7c8a;
+  /* ==========================================
+     SUPERFÍCIE GLASSMORPHISM
+     ========================================== */
+  --cor-glass-bg:    rgba(28, 28, 31, 0.7);
+  --cor-glass-borda: rgba(255, 255, 255, 0.06);
 
-  /* === Marca (Roxo + Verde) === */
-  --cor-marca-primaria: #8257e5;
-  --cor-marca-primaria-hover: #9466ff;
-  --cor-marca-primaria-sutil: rgba(130, 87, 229, 0.15);
-  --cor-marca-primaria-glow: rgba(130, 87, 229, 0.2);
-  --cor-marca-secundaria: #04d361;
+  /* ==========================================
+     TEXTO
+     ========================================== */
+  --cor-texto-primario:    #f5f5f7;
+  --cor-texto-componente:  #e2e2e8;
+  --cor-texto-secundario:  #a0a0ab;
+  --cor-texto-terciario:   #6b6b76;
+  --cor-texto-desabilitado:#4a4a55;
+  --cor-texto-invertido:   #080808;
 
-  /* === Gradientes === */
-  --gradiente-marca: linear-gradient(135deg, var(--cor-marca-primaria), var(--cor-marca-secundaria));
+  /* ==========================================
+     MARCA — Roxo + Verde
+     ========================================== */
+  --cor-marca-primaria:         #8b5cf6;
+  --cor-marca-primaria-hover:   #7c3aed;
+  --cor-marca-primaria-light:   #a78bfa;
+  --cor-marca-primaria-sutil:   rgba(139, 92, 246, 0.12);
+  --cor-marca-primaria-glow:    rgba(139, 92, 246, 0.25);
+  --cor-marca-secundaria:       #10b981;
+  --cor-marca-secundaria-sutil: rgba(16, 185, 129, 0.12);
+
+  /* ==========================================
+     GRADIENTES
+     ========================================== */
+  --gradiente-marca:            linear-gradient(135deg, var(--cor-marca-primaria), var(--cor-marca-secundaria));
   --gradiente-marca-horizontal: linear-gradient(90deg, var(--cor-marca-primaria), var(--cor-marca-secundaria));
+  --gradiente-marca-vertical:   linear-gradient(180deg, var(--cor-marca-primaria), var(--cor-marca-secundaria));
+  --gradiente-fundo-hero:       radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139, 92, 246, 0.18) 0%, transparent 60%);
+  --gradiente-card-hover:       linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(16, 185, 129, 0.04));
 
-  /* === Feedback === */
-  --cor-erro: #f75a68;
-  --cor-erro-sutil: rgba(247, 90, 104, 0.15);
-  --cor-sucesso: #04d361;
+  /* ==========================================
+     FEEDBACK
+     ========================================== */
+  --cor-erro:         #f87171;
+  --cor-erro-sutil:   rgba(248, 113, 113, 0.12);
+  --cor-erro-borda:   rgba(248, 113, 113, 0.3);
+  --cor-sucesso:      #34d399;
+  --cor-sucesso-sutil:rgba(52, 211, 153, 0.12);
+  --cor-sucesso-borda:rgba(52, 211, 153, 0.3);
+  --cor-aviso:        #fbbf24;
+  --cor-aviso-sutil:  rgba(251, 191, 36, 0.12);
+  --cor-aviso-borda:  rgba(251, 191, 36, 0.3);
+  --cor-info:         #60a5fa;
+  --cor-info-sutil:   rgba(96, 165, 250, 0.12);
+  --cor-info-borda:   rgba(96, 165, 250, 0.3);
+
+  /* ==========================================
+     TIPOGRAFIA
+     ========================================== */
+  --fonte-principal: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fonte-mono:      'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Escala tipográfica */
+  --texto-xs:   0.75rem;   /* 12px */
+  --texto-sm:   0.875rem;  /* 14px */
+  --texto-base: 1rem;      /* 16px */
+  --texto-lg:   1.125rem;  /* 18px */
+  --texto-xl:   1.25rem;   /* 20px */
+  --texto-2xl:  1.5rem;    /* 24px */
+  --texto-3xl:  1.875rem;  /* 30px */
+  --texto-4xl:  2.25rem;   /* 36px */
+  --texto-5xl:  3rem;      /* 48px */
+  --texto-6xl:  3.75rem;   /* 60px */
+  --texto-7xl:  4.5rem;    /* 72px */
+
+  /* Pesos */
+  --peso-light:    300;
+  --peso-regular:  400;
+  --peso-medium:   500;
+  --peso-semibold: 600;
+  --peso-bold:     700;
+  --peso-extrabold:800;
+
+  /* Alturas de linha */
+  --linha-apertada: 1.2;
+  --linha-snug:     1.375;
+  --linha-normal:   1.5;
+  --linha-relaxada: 1.625;
+  --linha-frouxa:   2;
+
+  /* ==========================================
+     ESPAÇAMENTO (base 4px)
+     ========================================== */
+  --espaco-1:  0.25rem;   /* 4px */
+  --espaco-2:  0.5rem;    /* 8px */
+  --espaco-3:  0.75rem;   /* 12px */
+  --espaco-4:  1rem;      /* 16px */
+  --espaco-5:  1.25rem;   /* 20px */
+  --espaco-6:  1.5rem;    /* 24px */
+  --espaco-8:  2rem;      /* 32px */
+  --espaco-10: 2.5rem;    /* 40px */
+  --espaco-12: 3rem;      /* 48px */
+  --espaco-16: 4rem;      /* 64px */
+  --espaco-20: 5rem;      /* 80px */
+  --espaco-24: 6rem;      /* 96px */
+  --espaco-32: 8rem;      /* 128px */
+
+  /* ==========================================
+     BORDER RADIUS
+     ========================================== */
+  --raio-xs:      4px;
+  --raio-sm:      6px;
+  --raio-md:      8px;
+  --raio-lg:      12px;
+  --raio-xl:      16px;
+  --raio-2xl:     20px;
+  --raio-3xl:     24px;
+  --raio-completo:9999px;
+
+  /* ==========================================
+     SOMBRAS
+     ========================================== */
+  --sombra-xs:   0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-sm:   0 2px 8px rgba(0, 0, 0, 0.4);
+  --sombra-md:   0 4px 16px rgba(0, 0, 0, 0.5);
+  --sombra-lg:   0 8px 32px rgba(0, 0, 0, 0.6);
+  --sombra-xl:   0 16px 48px rgba(0, 0, 0, 0.7);
+  --sombra-glow: 0 0 24px var(--cor-marca-primaria-glow);
+  --sombra-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 4px 16px rgba(0, 0, 0, 0.5);
+
+  /* ==========================================
+     BORDAS
+     ========================================== */
+  --borda-cor:       rgba(255, 255, 255, 0.07);
+  --borda-cor-hover: rgba(255, 255, 255, 0.12);
+  --borda-cor-foco:  var(--cor-marca-primaria);
+  --borda-largura:   1px;
+
+  /* ==========================================
+     TRANSIÇÕES
+     ========================================== */
+  --transicao-rapida:  all 0.15s ease;
+  --transicao-media:   all 0.25s ease;
+  --transicao-lenta:   all 0.4s ease;
+  --transicao-cor:     color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  --transicao-sombra:  box-shadow 0.25s ease;
+  --transicao-elevacao:transform 0.2s ease, box-shadow 0.25s ease;
+
+  /* ==========================================
+     Z-INDEX
+     ========================================== */
+  --z-base:     0;
+  --z-elevado:  10;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-navbar:   300;
+  --z-modal:    400;
+  --z-toast:    500;
+  --z-tooltip:  600;
+
+  /* ==========================================
+     BREAKPOINTS (referência — use em @media)
+     --bp-sm:  640px
+     --bp-md:  768px
+     --bp-lg:  1024px
+     --bp-xl:  1280px
+     --bp-2xl: 1536px
+     ========================================== */
+
+  /* ==========================================
+     LAYOUT
+     ========================================== */
+  --largura-max-conteudo: 1200px;
+  --largura-max-estreito: 640px;
+  --largura-max-medio:    800px;
+  --altura-navbar:        64px;
+  --padding-pagina:       clamp(1rem, 5vw, 2rem);
 }
