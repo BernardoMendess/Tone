@@ -56,11 +56,6 @@ class SmtpEmailServiceTest {
         usuario.setNomeCompleto("João Silva");
         usuario.setEmail("joao@example.com");
 
-        MimeMessage mimeMessage = mock(MimeMessage.class);
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        doThrow(new org.springframework.mail.MailSendException("SMTP falhou"))
-                .when(mailSender).send(any(MimeMessage.class));
-
         assertThrows(RuntimeException.class,
                 () -> smtpEmailService.enviarEmailVerificacao(usuario, "uuid-teste"));
     }

@@ -54,6 +54,14 @@ public class Produto {
     @Column(name = "status", nullable = false, length = 20)
     private StatusProduto status = StatusProduto.RASCUNHO;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id", nullable = true)
+    private Categoria categoria;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcategoria_id")
+    private Subcategoria subcategoria;
+
     @ElementCollection(targetClass = GeneroMusical.class)
     @CollectionTable(name = "produto_tags", joinColumns = @JoinColumn(name = "produto_id"))
     @Enumerated(EnumType.STRING)
@@ -132,6 +140,22 @@ public class Produto {
 
     public void setStatus(StatusProduto status) {
         this.status = status;
+    }
+
+    public Categoria getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(Categoria categoria) {
+        this.categoria = categoria;
+    }
+
+    public Subcategoria getSubcategoria() {
+        return subcategoria;
+    }
+
+    public void setSubcategoria(Subcategoria subcategoria) {
+        this.subcategoria = subcategoria;
     }
 
     public Set<GeneroMusical> getTags() {

@@ -37,6 +37,7 @@ public class ConfiguracaoSeguranca {
                                 "/api/auth/verificar-email",
                                 "/api/auth/logout"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categorias").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFiltro, UsernamePasswordAuthenticationFilter.class);

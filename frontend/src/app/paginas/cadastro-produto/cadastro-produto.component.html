@@ -30,6 +30,29 @@
         </div>
       </div>
 
+      <!-- Categoria e Subcategoria -->
+      <div class="form-row">
+        <div class="form-group" [class.half]="subcategoriasDisponiveis.length > 0">
+          <label for="categoriaId">Categoria *</label>
+          <select id="categoriaId" formControlName="categoriaId">
+            <option [ngValue]="null" disabled selected>Selecione uma categoria</option>
+            <option *ngFor="let cat of categorias" [value]="cat.id">
+              {{ cat.nome }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group half" *ngIf="subcategoriasDisponiveis.length > 0">
+          <label for="subcategoriaId">Subcategoria *</label>
+          <select id="subcategoriaId" formControlName="subcategoriaId">
+            <option [ngValue]="null" disabled selected>Selecione uma subcategoria</option>
+            <option *ngFor="let sub of subcategoriasDisponiveis" [value]="sub.id">
+              {{ sub.nome }}
+            </option>
+          </select>
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Gêneros Musicais (Tags)</label>
         <div class="tags-container">

@@ -5,13 +5,19 @@ import com.tone.controlador.dto.UploadUrlRequest;
 import com.tone.controlador.dto.UploadUrlResponse;
 import com.tone.controlador.excecao.CriadorNaoEncontradoException;
 import com.tone.controlador.excecao.ProdutoNaoEncontradoException;
+import com.tone.modelo.Categoria;
 import com.tone.modelo.Produto;
+import com.tone.modelo.Subcategoria;
 import com.tone.modelo.Usuario;
 import com.tone.modelo.enums.StatusProduto;
+import com.tone.repositorio.CategoriaRepositorio;
 import com.tone.repositorio.ProdutoRepositorio;
+import com.tone.repositorio.SubcategoriaRepositorio;
 import com.tone.repositorio.UsuarioRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -25,13 +31,19 @@ public class ProdutoServico {
     private final ProdutoRepositorio produtoRepositorio;
     private final UsuarioRepository usuarioRepository;
     private final S3Service s3Service;
+    private final CategoriaRepositorio categoriaRepositorio;
+    private final SubcategoriaRepositorio subcategoriaRepositorio;
 
     public ProdutoServico(ProdutoRepositorio produtoRepositorio,
                           UsuarioRepository usuarioRepository,
-                          S3Service s3Service) {
+                          S3Service s3Service,
+                          CategoriaRepositorio categoriaRepositorio,
+                          SubcategoriaRepositorio subcategoriaRepositorio) {
         this.produtoRepositorio = produtoRepositorio;
         this.usuarioRepository = usuarioRepository;
         this.s3Service = s3Service;
+        this.categoriaRepositorio = categoriaRepositorio;
+        this.subcategoriaRepositorio = subcategoriaRepositorio;
     }
 
     /**
@@ -73,6 +85,27 @@ public class ProdutoServico {
 
         if (request.getTags() != null) {
             produto.setTags(request.getTags());
+        }
+
+        // Associar categoria (obrigatória)
+        Categoria categoria = categoriaRepositorio.findById(request.getCategoriaId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Categoria não encontrada com id: " + request.getCategoriaId()));
+        produto.setCategoria(categoria);
+
+        // Associar subcategoria (obrigatória se a categoria possuir subcategorias)
+        if (request.getSubcategoriaId() != null) {
+            Subcategoria subcategoria = subcategoriaRepositorio.findById(request.getSubcategoriaId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Subcategoria não encontrada com id: " + request.getSubcategoriaId()));
+            if (!subcategoria.getCategoria().getId().equals(categoria.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "A subcategoria não pertence à categoria informada.");
+            }
+            produto.setSubcategoria(subcategoria);
+        } else if (!categoria.getSubcategorias().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A subcategoria é obrigatória para a categoria informada.");
         }
 
         // Status PUBLICADO após envio dos metadados válidos pelo criador
