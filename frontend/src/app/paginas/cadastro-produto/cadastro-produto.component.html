@@ -1,0 +1,88 @@
+<div class="cadastro-container">
+  <div class="form-wrapper glass-panel">
+    <h1 class="gradient-text">Novo Produto</h1>
+    <p class="subtitle">Adicione o seu timbre ao marketplace.</p>
+
+    <div *ngIf="mensagemErro" class="alert alert-error">
+      {{ mensagemErro }}
+    </div>
+
+    <form [formGroup]="produtoForm" (ngSubmit)="onSubmit()" class="modern-form">
+      
+      <div class="form-group">
+        <label for="nome">Título do Produto</label>
+        <input id="nome" type="text" formControlName="nome" placeholder="Ex: Pack Rock Clássico 80s" />
+      </div>
+
+      <div class="form-group">
+        <label for="descricao">Descrição (Detalhes Técnicos)</label>
+        <textarea id="descricao" formControlName="descricao" rows="4" placeholder="Fale sobre o timbre, gabinetes, amplificadores..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label for="preco">Preço (R$)</label>
+          <input id="preco" type="number" formControlName="preco" min="0" step="0.01" />
+        </div>
+        <div class="form-group half">
+          <label for="videoUrl">Video Demo (URL)</label>
+          <input id="videoUrl" type="url" formControlName="videoUrl" placeholder="YouTube, Instagram..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Gêneros Musicais (Tags)</label>
+        <div class="tags-container">
+          <button 
+            type="button" 
+            *ngFor="let tag of tagsDisponiveis" 
+            class="tag-chip"
+            [class.active]="tagsSelecionadas.includes(tag)"
+            (click)="toggleTag(tag)">
+            {{ tag | titlecase }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Arquivo do Timbre (.zip)</label>
+        <div class="file-drop-area">
+          <span class="file-msg">{{ arquivoSelecionado ? arquivoSelecionado.name : 'Arraste ou clique para selecionar (Max 1MB)' }}</span>
+          <input type="file" class="file-input" accept=".zip,.rar,.tar" (change)="onFileSelected($event)">
+        </div>
+      </div>
+
+      <!-- Área de Progresso e Status -->
+      <div *ngIf="statusEnvio !== 'IDLE' && statusEnvio !== 'ERRO'" class="status-area">
+        
+        <div *ngIf="statusEnvio === 'SOLICITANDO_URL'" class="status-msg">
+          <div class="spinner"></div> Preparando envio seguro...
+        </div>
+
+        <div *ngIf="statusEnvio === 'FAZENDO_UPLOAD'" class="progress-container">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="progressoUpload"></div>
+          </div>
+          <span class="progress-text">Enviando... {{ progressoUpload }}%</span>
+        </div>
+
+        <div *ngIf="statusEnvio === 'SALVANDO_PRODUTO'" class="status-msg">
+          <div class="spinner"></div> Finalizando cadastro...
+        </div>
+
+        <div *ngIf="statusEnvio === 'SUCESSO'" class="status-msg success">
+          ✅ Produto cadastrado com sucesso!
+        </div>
+
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn-primary" 
+        [disabled]="produtoForm.invalid || !arquivoSelecionado || tagsSelecionadas.length === 0 || statusEnvio !== 'IDLE'">
+        Publicar Timbre
+      </button>
+
+    </form>
+  </div>
+</div>
