@@ -26,6 +26,7 @@
 - **Comentários pontuais:** Comentar apenas onde realmente necessário para esclarecer lógica não óbvia.
 - **Modularização:** Modularizar o máximo possível.
 - **Boas práticas:** Seguir as boas práticas de cada linguagem/framework.
+- **Lombok:** Usar e abuse de lombok.
 
 ### Estratégia de Testes
 - **Testes unitários:** Para cada método implementado, escrever testes unitários correspondentes.
