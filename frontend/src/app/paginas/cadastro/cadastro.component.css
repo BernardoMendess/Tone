@@ -1,84 +1,12 @@
 @import '../login/login.component.css';
 
-/* ===== CARD MAIS LARGO PARA O CADASTRO ===== */
-.cadastro-card {
-  max-width: 460px;
+/* Área do formulário mais larga para o formulário de cadastro com mais campos */
+.auth-formulario-area--larga {
+  max-width: 600px;
 }
 
-/* ===== CHECKLIST DE SENHA ===== */
-.checklist-senha {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 12px 14px;
-  background: #27272A;
-  border-radius: 8px;
-  border: 1px solid #3F3F46;
-  animation: fadeIn 0.2s ease;
-}
-
-.criterio {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #71717A;
-  transition: color 0.25s;
-}
-
-.criterio-ok {
-  color: #22C55E;
-}
-
-.criterio-icone {
-  font-size: 13px;
-  font-weight: 600;
-  width: 14px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-/* ===== ESTADO SUCESSO ===== */
-.estado-sucesso {
-  text-align: center;
-  padding: 20px 0;
-  animation: fadeIn 0.4s ease;
-}
-
-.sucesso-icone {
-  font-size: 48px;
-  margin-bottom: 16px;
-  filter: grayscale(0);
-}
-
-.sucesso-titulo {
-  font-size: 20px;
-  font-weight: 700;
-  color: #F4F4F5;
-  margin: 0 0 12px;
-}
-
-.sucesso-texto {
-  font-size: 14px;
-  color: #A1A1AA;
-  margin: 0 0 8px;
-  line-height: 1.6;
-}
-
-.sucesso-texto strong {
-  color: #F4F4F5;
-}
-
-.sucesso-subtexto {
-  font-size: 12px;
-  color: #52525B;
-  margin: 0 0 28px;
-}
-
-/* ===== BTN COMO LINK ===== */
-a.btn-primario {
-  display: block;
-  text-align: center;
-  text-decoration: none;
+@media (max-width: 768px) {
+  .auth-formulario-area--larga {
+    max-width: 100%;
+  }
 }

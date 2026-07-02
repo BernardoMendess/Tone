@@ -1,56 +1,100 @@
-<div class="container">
-  <div class="card">
-    <h2 class="titulo">Cadastro de Categoria</h2>
-    
-    <div *ngIf="mensagemSucesso" class="alerta sucesso">{{ mensagemSucesso }}</div>
-    <div *ngIf="mensagemErro" class="alerta erro">{{ mensagemErro }}</div>
+<div class="admin-pagina" id="pagina-cadastro-categoria">
+  <div class="container admin-pagina__container">
 
-    <form [formGroup]="categoriaForm" (ngSubmit)="salvar()" class="formulario">
-      <div class="grupo-campo">
-        <label for="nome">Nome da Categoria</label>
-        <input 
-          id="nome" 
-          type="text" 
-          formControlName="nome" 
-          placeholder="Ex: Pedaleira" 
-          class="input-estilizado"
-        />
-        <div *ngIf="categoriaForm.get('nome')?.touched && categoriaForm.get('nome')?.invalid" class="erro-texto">
-          Nome da categoria é obrigatório.
+    <!-- Cabeçalho -->
+    <header class="admin-header">
+      <div class="admin-header__badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+      </div>
+      <h1 class="admin-header__titulo">Cadastro de Categoria</h1>
+      <p class="admin-header__subtitulo">Gerencie as categorias e subcategorias do marketplace.</p>
+    </header>
+
+    <!-- Card do formulário -->
+    <div class="admin-card animar-entrada-cima">
+
+      <!-- Alertas -->
+      <div class="alerta alerta--sucesso" *ngIf="mensagemSucesso" role="status">
+        <svg class="alerta__icone" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        {{ mensagemSucesso }}
+      </div>
+
+      <div class="alerta alerta--erro" *ngIf="mensagemErro" role="alert">
+        <svg class="alerta__icone" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        {{ mensagemErro }}
+      </div>
+
+      <form [formGroup]="categoriaForm" (ngSubmit)="salvar()" class="admin-form">
+
+        <!-- Nome da categoria -->
+        <div class="campo-grupo">
+          <label for="nome" class="campo-label">Nome da Categoria <span class="campo-obrigatorio">*</span></label>
+          <input
+            id="nome"
+            type="text"
+            formControlName="nome"
+            class="campo-input"
+            placeholder="Ex: Pedaleira, Amplificador..."
+            maxlength="100"
+          />
+          <span class="campo-erro-msg" *ngIf="categoriaForm.get('nome')?.touched && categoriaForm.get('nome')?.invalid">
+            Nome da categoria é obrigatório.
+          </span>
         </div>
-      </div>
 
-      <div class="subcategorias-header">
-        <h3>Subcategorias (Opcional)</h3>
-        <button type="button" class="btn-secundario" (click)="adicionarSubcategoria()">
-          + Adicionar Subcategoria
-        </button>
-      </div>
-
-      <div formArrayName="subcategorias" class="lista-subcategorias">
-        <div 
-          *ngFor="let sub of subcategorias.controls; let i = index" 
-          [formGroupName]="i" 
-          class="subcategoria-item"
-        >
-          <div class="grupo-campo grow">
-            <input 
-              type="text" 
-              formControlName="nome" 
-              placeholder="Ex: Analógicas" 
-              class="input-estilizado"
-            />
+        <!-- Subcategorias -->
+        <div class="subcategorias-secao">
+          <div class="subcategorias-secao__header">
+            <div>
+              <h2 class="subcategorias-secao__titulo">Subcategorias</h2>
+              <p class="subcategorias-secao__subtitulo">Opcional — adicione subdivisões para esta categoria</p>
+            </div>
+            <button type="button" class="btn-adicionar" (click)="adicionarSubcategoria()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Adicionar
+            </button>
           </div>
-          <button type="button" class="btn-remover" (click)="removerSubcategoria(i)" title="Remover">
-            &times;
-          </button>
-        </div>
-      </div>
 
-      <button type="submit" class="btn-primario" [disabled]="carregando || categoriaForm.invalid">
-        <span *ngIf="!carregando">Salvar Categoria</span>
-        <span *ngIf="carregando">Salvando...</span>
-      </button>
-    </form>
+          <div formArrayName="subcategorias" class="subcategorias-lista">
+            <div
+              *ngFor="let sub of subcategorias.controls; let i = index"
+              [formGroupName]="i"
+              class="subcategoria-item animar-entrada-cima"
+            >
+              <div class="subcategoria-item__numero">{{ i + 1 }}</div>
+              <input
+                type="text"
+                formControlName="nome"
+                class="campo-input"
+                [placeholder]="'Subcategoria ' + (i + 1)"
+                maxlength="100"
+              />
+              <button type="button" class="btn-remover" (click)="removerSubcategoria(i)" [attr.aria-label]="'Remover subcategoria ' + (i + 1)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <!-- Estado vazio -->
+            <div class="subcategorias-vazio" *ngIf="subcategorias.length === 0">
+              <p>Nenhuma subcategoria adicionada. Clique em "Adicionar" para criar.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botão submit -->
+        <button
+          type="submit"
+          class="btn-salvar"
+          [disabled]="carregando || categoriaForm.invalid"
+          id="btn-salvar-categoria"
+        >
+          <span class="spinner spinner--escuro" *ngIf="carregando"></span>
+          <span *ngIf="!carregando">Salvar categoria</span>
+        </button>
+
+      </form>
+    </div>
+
   </div>
 </div>

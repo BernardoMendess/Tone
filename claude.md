@@ -26,6 +26,7 @@
 - **Comentários pontuais:** Comentar apenas onde realmente necessário para esclarecer lógica não óbvia.
 - **Modularização:** Modularizar o máximo possível.
 - **Boas práticas:** Seguir as boas práticas de cada linguagem/framework.
+- **Lombok:** Usar e abuse de lombok.
 
 ### Estratégia de Testes
 - **Testes unitários:** Para cada método implementado, escrever testes unitários correspondentes.
@@ -34,12 +35,113 @@
 ---
 
 ### Frontend
-- **Tecnologia:** Angular
-- **Paleta de Cores (Design System - Dark & Minimalista):**
-  - **Fundo Principal (Background):** Preto puro (`#000000`) ou um tom extremamente escuro (ex: `#0A0A0A`) para um visual sofisticado e imersivo.
-  - **Superfícies (Cards, Modais, Menus):** Tons de cinza escuro (ex: `#1A1A1A` ou `#27272A`) para criar profundidade e separar os elementos sem a necessidade de bordas pesadas.
-  - **Texto e Ícones:** Branco ou tons de cinza muito claro (ex: `#F4F4F5` para títulos, `#A1A1AA` para textos descritivos/secundários), garantindo leitura confortável.
-  - **Regra de Implementação:** Centralize todos os códigos hexadecimais em um único arquivo de tema (ex: `src/styles/theme.ts` ou `constants/Colors.ts`). **Nunca** utilize cores *hardcoded* (direto nas propriedades `style`) dentro dos componentes.
+
+- **Tecnologia:** Angular 19 (standalone components, lazy loading)
+- **Fonte:** Inter (via Google Fonts) — 300, 400, 500, 600, 700, 800
+- **Arquivo de Tema:** `src/styles/tema.css` — **TODAS** as variáveis CSS ficam aqui. Nunca hardcode cores ou valores.
+- **Animações:** `src/styles/animacoes.css` — keyframes globais e classes utilitárias.
+- **Estilos Globais:** `src/styles.css` — imports, reset, scrollbar, utilitários.
+
+#### Design System
+
+**Cores principais (variáveis CSS):**
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--cor-fundo-principal` | `#080808` | Background geral |
+| `--cor-fundo-componente` | `#0f0f0f` | Background secondary |
+| `--cor-fundo-card` | `#1c1c1f` | Cards, modais, menus |
+| `--cor-fundo-elevado` | `#161618` | Inputs, áreas elevadas |
+| `--cor-texto-primario` | `#f5f5f7` | Títulos, texto principal |
+| `--cor-texto-secundario` | `#a0a0ab` | Texto de suporte |
+| `--cor-texto-terciario` | `#6b6b76` | Placeholder, labels |
+| `--cor-marca-primaria` | `#8b5cf6` | CTA, focus, highlights |
+| `--cor-marca-secundaria` | `#10b981` | Sucesso, acento verde |
+| `--cor-erro` | `#f87171` | Erros, alerts |
+| `--cor-sucesso` | `#34d399` | Sucesso |
+
+**Tipografia:**
+- Escala: `--texto-xs` (12px) → `--texto-7xl` (72px)
+- Pesos: `--peso-light` → `--peso-extrabold`
+- Sempre usar `var(--fonte-principal)` em `font-family`
+- Títulos: `letter-spacing: -0.02em` a `-0.04em` para aparência premium
+
+**Espaçamento:**
+- Base 4px: `--espaco-1` (4px) → `--espaco-32` (128px)
+- Usar `clamp()` para padding responsivo: `var(--padding-pagina)`
+
+**Bordas e Sombras:**
+- Bordas: `var(--borda-cor)` = `rgba(255,255,255,0.07)`
+- Border radius: `--raio-sm` (6px) → `--raio-3xl` (24px) → `--raio-completo` (9999px)
+- Sombras: `--sombra-xs` → `--sombra-xl`, `--sombra-glow`
+
+#### Arquitetura de Componentes
+
+**Estrutura de arquivos:**
+```
+src/app/
+├── compartilhados/          # Componentes reutilizáveis
+│   ├── navbar/
+│   ├── footer/
+│   ├── layout/              # Wrapper com navbar+footer para rotas auth
+│   ├── alerta/
+│   └── skeleton-loader/
+├── paginas/                 # Páginas/views da aplicação
+│   ├── landing/             # Pública — sem guard
+│   ├── login/
+│   ├── cadastro/
+│   ├── verificar-email/
+│   ├── home/                # Rota /marketplace — com authGuard
+│   ├── cadastro-produto/
+│   └── cadastro-categoria/
+├── guards/
+├── interceptores/
+├── modelos/
+├── servicos/
+└── validadores/
+```
+
+**Roteamento:**
+- `/` → `LandingComponent` (pública, sem guard)
+- `/marketplace` → `HomeComponent` (via `LayoutComponent`, com `authGuard`)
+- `/login`, `/cadastro`, `/verificar-email` → standalone (sem navbar/footer)
+- Rotas autenticadas são filhas de `LayoutComponent`
+
+#### Regras de CSS
+
+1. **Nunca** usar valores hexadecimais diretamente nos componentes — sempre usar variáveis CSS do `tema.css`
+2. **Nunca** usar `!important` exceto para overrides muito específicos
+3. Nomenclatura BEM-like em português: `.nome-componente__elemento--modificador`
+4. Cada componente tem seu próprio arquivo `.css` — sem estilos globais no componente
+5. Responsividade com breakpoints padrão:
+   - Mobile: `max-width: 480px`
+   - Tablet: `max-width: 768px`
+   - Desktop: `max-width: 1024px`
+   - Wide: `max-width: 1280px`
+
+#### Animações
+
+- Todas as keyframes ficam em `src/styles/animacoes.css`
+- Classes utilitárias: `.animar-entrada`, `.animar-entrada-cima`, `.animar-escalar`
+- Delays: `.atraso-1` a `.atraso-6` (incrementos de 50ms)
+- Sempre incluir `@media (prefers-reduced-motion: reduce)` para acessibilidade
+- Hover effects: `transform: translateY(-2px)` + `box-shadow` (nunca exagerar)
+
+#### Ícones
+
+- **SVG inline** — sem dependências externas (Heroicons-style)
+- Tamanhos padrão: 14px, 16px, 18px, 20px, 22px, 24px
+- Sempre adicionar `aria-hidden="true"` em SVGs decorativos
+- Nunca usar emojis como ícones de interface
+
+#### Boas Práticas Angular
+
+- Componentes `standalone: true`
+- Lazy loading em todas as rotas
+- `@Input()` e `@Output()` para comunicação entre componentes
+- Sem lógica de negócio nos templates — usar getters/métodos no TypeScript
+- Preservar todos os `id` de elementos para compatibilidade com testes
+- Não alterar TypeScript de serviços, guards, interceptors ou validators
+
 
 ---
 

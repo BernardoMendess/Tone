@@ -1,0 +1,104 @@
+<nav class="navbar" id="navbar-principal" role="navigation" aria-label="Navegação principal">
+  <div class="navbar__container">
+
+    <!-- Logo -->
+    <a routerLink="/" class="navbar__logo" id="navbar-logo" (click)="fecharMenuMobile()">
+      <span class="navbar__logo-texto">tone</span>
+      <span class="navbar__logo-dot"></span>
+    </a>
+
+    <!-- Links centrais (desktop) -->
+    <div class="navbar__links">
+      <a routerLink="/marketplace" routerLinkActive="navbar__link--ativo" class="navbar__link" id="nav-marketplace">
+        Marketplace
+      </a>
+      <a
+        *ngIf="podePublicar"
+        routerLink="/cadastro-produto"
+        routerLinkActive="navbar__link--ativo"
+        class="navbar__link"
+        id="nav-publicar"
+      >
+        Publicar
+      </a>
+      <a
+        *ngIf="usuario?.tipoPerfil === 'ADMIN'"
+        routerLink="/categorias/nova"
+        routerLinkActive="navbar__link--ativo"
+        class="navbar__link"
+        id="nav-admin"
+      >
+        Admin
+      </a>
+    </div>
+
+    <!-- Área do usuário (desktop) -->
+    <div class="navbar__acoes">
+      <!-- Usuário logado -->
+      <div class="navbar__usuario" *ngIf="usuario" (clickOutside)="fecharMenuUsuario()">
+        <button
+          class="navbar__avatar"
+          (click)="alternarMenuUsuario()"
+          [attr.aria-expanded]="menuUsuarioAberto"
+          aria-haspopup="true"
+          id="btn-menu-usuario"
+        >
+          <span class="navbar__avatar-iniciais">{{ iniciais }}</span>
+        </button>
+
+        <!-- Dropdown do usuário -->
+        <div class="navbar__dropdown" *ngIf="menuUsuarioAberto" role="menu">
+          <div class="navbar__dropdown-header">
+            <span class="navbar__dropdown-nome">{{ usuario.nomeCompleto }}</span>
+            <span class="navbar__dropdown-email">{{ usuario.email }}</span>
+            <span class="badge badge--marca navbar__dropdown-perfil">{{ usuario.tipoPerfil }}</span>
+          </div>
+          <div class="navbar__dropdown-divisor"></div>
+          <a routerLink="/marketplace" class="navbar__dropdown-item" role="menuitem" (click)="fecharMenuUsuario()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Marketplace
+          </a>
+          <a *ngIf="podePublicar" routerLink="/cadastro-produto" class="navbar__dropdown-item" role="menuitem" (click)="fecharMenuUsuario()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Publicar produto
+          </a>
+          <div class="navbar__dropdown-divisor"></div>
+          <button class="navbar__dropdown-item navbar__dropdown-item--perigo" role="menuitem" (click)="realizarLogout()" id="btn-logout-navbar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão hamburguer (mobile) -->
+    <button
+      class="navbar__hamburger"
+      (click)="alternarMenuMobile()"
+      [attr.aria-expanded]="menuMobileAberto"
+      aria-label="Abrir menu"
+      id="btn-menu-mobile"
+    >
+      <span class="navbar__hamburger-linha" [class.navbar__hamburger-linha--ativo]="menuMobileAberto"></span>
+    </button>
+  </div>
+
+  <!-- Menu mobile -->
+  <div class="navbar__mobile" *ngIf="menuMobileAberto" id="menu-mobile">
+    <div class="navbar__mobile-container">
+      <a routerLink="/marketplace" class="navbar__mobile-link" (click)="fecharMenuMobile()">Marketplace</a>
+      <a *ngIf="podePublicar" routerLink="/cadastro-produto" class="navbar__mobile-link" (click)="fecharMenuMobile()">Publicar produto</a>
+      <a *ngIf="usuario?.tipoPerfil === 'ADMIN'" routerLink="/categorias/nova" class="navbar__mobile-link" (click)="fecharMenuMobile()">Admin</a>
+
+      <div class="navbar__mobile-divisor" *ngIf="usuario"></div>
+
+      <div class="navbar__mobile-usuario" *ngIf="usuario">
+        <div class="navbar__mobile-usuario-info">
+          <span>{{ usuario.nomeCompleto }}</span>
+          <span class="navbar__mobile-usuario-email">{{ usuario.email }}</span>
+        </div>
+        <button class="navbar__mobile-sair" (click)="realizarLogout()" id="btn-logout-mobile">Sair</button>
+      </div>
+    </div>
+  </div>
+</nav>

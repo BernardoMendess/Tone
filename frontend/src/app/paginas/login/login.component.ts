@@ -53,7 +53,7 @@ export class LoginComponent {
     this.authService.login(this.formulario.value).subscribe({
       next: () => {
         this.carregando = false;
-        this.router.navigate(['/']);
+        this.router.navigate(['/marketplace']);
       },
       error: (err) => {
         this.carregando = false;

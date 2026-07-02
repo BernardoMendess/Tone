@@ -60,3 +60,6 @@ Desktop.ini
 .env.test.local
 .env.production.local
 *.env
+
+*.md
+claude.md
