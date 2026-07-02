@@ -32,17 +32,6 @@ export const routes: Routes = [
 
   // Rotas autenticadas (com navbar/footer via LayoutComponent)
   {
-    path: 'perfil/editar',
-    loadComponent: () =>
-      import('./paginas/editar-perfil/editar-perfil.component').then((m) => m.EditarPerfilComponent),
-    canActivate: [authGuard, criadorOuAdminGuard]
-  },
-  {
-    path: 'criador/:id',
-    loadComponent: () =>
-      import('./paginas/pagina-criador/pagina-criador.component').then((m) => m.PaginaCriadorComponent)
-  },
-  {
     path: '',
     loadComponent: () =>
       import('./compartilhados/layout/layout.component').then((m) => m.LayoutComponent),
@@ -67,6 +56,17 @@ export const routes: Routes = [
             (m) => m.CadastroCategoriaComponent
           ),
         canActivate: [adminGuard],
+      },
+      {
+        path: 'perfil/editar',
+        loadComponent: () =>
+          import('./paginas/editar-perfil/editar-perfil.component').then((m) => m.EditarPerfilComponent),
+        canActivate: [criadorOuAdminGuard]
+      },
+      {
+        path: 'criador/:id',
+        loadComponent: () =>
+          import('./paginas/pagina-criador/pagina-criador.component').then((m) => m.PaginaCriadorComponent)
       },
     ],
   },

@@ -1,105 +1,141 @@
-<div class="container-criador">
+<div class="pagina-criador animar-entrada">
   
   <!-- Estado de Carregamento -->
-  <div *ngIf="carregando" class="tela-mensagem">
-    <div class="spinner"></div>
-    <p>Carregando perfil do artista...</p>
+  <div *ngIf="carregando" class="pagina-criador__estado">
+    <div class="spinner spinner--lg"></div>
+    <p class="pagina-criador__estado-texto">Carregando perfil do artista...</p>
   </div>
 
   <!-- Estado de Erro -->
-  <div *ngIf="!carregando && erro" class="tela-mensagem">
-    <span>⚠️</span>
-    <p>{{ erro }}</p>
-    <button (click)="voltarHome()">Voltar para a Home</button>
+  <div *ngIf="!carregando && erro" class="pagina-criador__estado">
+    <div class="pagina-criador__erro-card">
+      <div class="pagina-criador__erro-icone" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <p class="pagina-criador__estado-texto">{{ erro }}</p>
+      <button class="pagina-criador__btn-erro" (click)="voltarHome()">Voltar para a Home</button>
+    </div>
   </div>
 
   <!-- Conteúdo Principal -->
-  <div *ngIf="!carregando && !erro && perfil">
+  <div *ngIf="!carregando && !erro && perfil" class="animar-entrada">
     
     <!-- Banner de Capa -->
-    <div class="banner-capa">
-      <div class="banner-overlay"></div>
+    <div class="pagina-criador__banner">
+      <div class="pagina-criador__banner-overlay"></div>
     </div>
 
     <!-- Informações do Perfil -->
-    <div class="area-perfil-info">
-      
-      <!-- Avatar circular -->
-      <div class="avatar-criador-container">
-        <img *ngIf="perfil.fotoPerfilUrl" [src]="perfil.fotoPerfilUrl" alt="Foto de {{ perfil.nomeCompleto }}" class="avatar-criador">
-        <div *ngIf="!perfil.fotoPerfilUrl" class="avatar-iniciais">
-          {{ obterIniciais() }}
-        </div>
-      </div>
-
-      <!-- Nome e Badge -->
-      <h1 class="nome-criador">{{ perfil.nomeCompleto }}</h1>
-      <span class="tag-badge-criador">Artista / Criador</span>
-
-      <!-- Biografia -->
-      <p *ngIf="perfil.biografia" class="biografia-criador">{{ perfil.biografia }}</p>
-      <p *ngIf="!perfil.biografia" class="biografia-criador"><i>Este criador ainda não escreveu uma biografia.</i></p>
-
-      <!-- Redes Sociais -->
-      <div class="redes-criador" *ngIf="temRedesSociais()">
+    <div class="container">
+      <div class="pagina-criador__perfil">
         
-        <!-- Instagram -->
-        <a *ngIf="perfil.instagramUrl" [href]="perfil.instagramUrl" target="_blank" class="link-rede">
-          <span class="icone-rede">📸</span> Instagram
-        </a>
+        <!-- Avatar circular -->
+        <div class="pagina-criador__avatar-container animar-escalar">
+          <img *ngIf="perfil.fotoPerfilUrl" [src]="perfil.fotoPerfilUrl" alt="Foto de {{ perfil.nomeCompleto }}" class="pagina-criador__avatar">
+          <div *ngIf="!perfil.fotoPerfilUrl" class="pagina-criador__avatar-iniciais">
+            {{ obterIniciais() }}
+          </div>
+        </div>
 
-        <!-- YouTube -->
-        <a *ngIf="perfil.youtubeUrl" [href]="perfil.youtubeUrl" target="_blank" class="link-rede">
-          <span class="icone-rede">🎥</span> YouTube
-        </a>
+        <!-- Detalhes do Perfil -->
+        <div class="pagina-criador__detalhes">
+          <div class="pagina-criador__detalhes-header">
+            <div class="pagina-criador__detalhes-identidade">
+              <h1 class="pagina-criador__nome">{{ perfil.nomeCompleto }}</h1>
+              <span class="badge badge--marca">Artista / Criador</span>
+            </div>
+            <!-- Botão visível apenas para o dono do perfil -->
+            <a
+              *ngIf="ehDono"
+              routerLink="/perfil/editar"
+              class="pagina-criador__btn-editar"
+              id="btn-editar-perfil"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Editar Perfil
+            </a>
+          </div>
+        </div>
 
-        <!-- SoundCloud -->
-        <a *ngIf="perfil.soundcloudUrl" [href]="perfil.soundcloudUrl" target="_blank" class="link-rede">
-          <span class="icone-rede">🎵</span> SoundCloud
-        </a>
+        <!-- Biografia -->
+        <p *ngIf="perfil.biografia" class="pagina-criador__biografia">{{ perfil.biografia }}</p>
+        <p *ngIf="!perfil.biografia" class="pagina-criador__biografia pagina-criador__biografia--vazia">
+          Este criador ainda não escreveu uma biografia.
+        </p>
 
-        <!-- Site Pessoal -->
-        <a *ngIf="perfil.sitePessoalUrl" [href]="perfil.sitePessoalUrl" target="_blank" class="link-rede">
-          <span class="icone-rede">🔗</span> Website
-        </a>
-
-      </div>
-
-    </div>
-
-    <!-- Grade de Portfólio (Produtos) -->
-    <div class="secao-portfolio">
-      <h2 class="titulo-portfolio">Portfólio de Timbres</h2>
-      
-      <!-- Lista de Produtos -->
-      <div class="grid-produtos" *ngIf="produtos.length > 0">
-        <div class="card-produto" *ngFor="let produto of produtos">
+        <!-- Redes Sociais -->
+        <div class="pagina-criador__redes" *ngIf="temRedesSociais()">
           
-          <div class="produto-topo">
-            <span class="categoria-tag">{{ produto.categoriaNome || 'Timbre' }}</span>
-            <span class="preco-tag">{{ produto.preco | currency:'BRL':'symbol':'1.2-2' }}</span>
-          </div>
+          <!-- Instagram -->
+          <a *ngIf="perfil.instagramUrl" [href]="perfil.instagramUrl" target="_blank" class="pagina-criador__link-rede">
+            <svg class="pagina-criador__icone-rede" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            Instagram
+          </a>
 
-          <h3 class="produto-titulo">{{ produto.nome }}</h3>
-          <p class="produto-desc">{{ produto.descricao }}</p>
+          <!-- YouTube -->
+          <a *ngIf="perfil.youtubeUrl" [href]="perfil.youtubeUrl" target="_blank" class="pagina-criador__link-rede">
+            <svg class="pagina-criador__icone-rede" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 11.5a29 29 0 0 0 .46 5.08 2.78 2.78 0 0 0 1.95 1.96C5.12 19 12 19 12 19s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 11.5a29 29 0 0 0-.46-5.08z"></path><polygon points="9.75 15.02 15.5 11.5 9.75 7.98 9.75 15.02"></polygon></svg>
+            YouTube
+          </a>
 
-          <div class="tags-container" *ngIf="produto.tags && produto.tags.length > 0">
-            <span class="tag-produto" *ngFor="let tag of produto.tags">#{{ tag }}</span>
-          </div>
+          <!-- SoundCloud -->
+          <a *ngIf="perfil.soundcloudUrl" [href]="perfil.soundcloudUrl" target="_blank" class="pagina-criador__link-rede">
+            <svg class="pagina-criador__icone-rede" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+            SoundCloud
+          </a>
 
-          <button class="btn-detalhes" (click)="verDetalhesProduto(produto.id)">
-            Ver Detalhes
-          </button>
+          <!-- Site Pessoal -->
+          <a *ngIf="perfil.sitePessoalUrl" [href]="perfil.sitePessoalUrl" target="_blank" class="pagina-criador__link-rede">
+            <svg class="pagina-criador__icone-rede" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            Website
+          </a>
 
         </div>
+
       </div>
 
-      <!-- Estado Vazio do Portfólio -->
-      <div class="portfolio-vazio" *ngIf="produtos.length === 0">
-        <div class="portfolio-vazio-icone">🎸</div>
-        <p>Este criador ainda não publicou presets ou Impulse Responses.</p>
-      </div>
+      <div class="divisor"></div>
 
+      <!-- Grade de Portfólio (Produtos) -->
+      <div class="pagina-criador__secao-portfolio">
+        <h2 class="pagina-criador__titulo-portfolio">Portfólio de Timbres</h2>
+        
+        <!-- Lista de Produtos -->
+        <div class="pagina-criador__grid-produtos" *ngIf="produtos.length > 0">
+          <div class="pagina-criador__card-produto animar-entrada-cima" 
+               *ngFor="let produto of produtos; let i = index" 
+               [ngClass]="'atraso-' + (i % 6 + 1)">
+            
+            <div class="pagina-criador__card-topo">
+              <span class="badge badge--marca">{{ produto.categoriaNome || 'Timbre' }}</span>
+              <span class="pagina-criador__preco-tag">{{ produto.preco | currency:'BRL':'symbol':'1.2-2' }}</span>
+            </div>
+
+            <h3 class="pagina-criador__produto-titulo">{{ produto.nome }}</h3>
+            <p class="pagina-criador__produto-desc">{{ produto.descricao }}</p>
+
+            <!-- Tags -->
+            <div class="pagina-criador__tags-container" *ngIf="produto.tags && produto.tags.length > 0">
+              <span class="pagina-criador__tag-produto" *ngFor="let tag of produto.tags">#{{ tag }}</span>
+            </div>
+
+            <!-- Ação do Card -->
+            <button class="pagina-criador__btn-detalhes" (click)="verDetalhesProduto(produto.id)">
+              Ver Detalhes
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Estado Vazio do Portfólio -->
+        <div class="pagina-criador__portfolio-vazio animar-entrada" *ngIf="produtos.length === 0">
+          <div class="pagina-criador__portfolio-vazio-icone" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <p>Este criador ainda não publicou presets ou Impulse Responses.</p>
+        </div>
+
+      </div>
     </div>
 
   </div>

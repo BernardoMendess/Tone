@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PerfilService } from '../../servicos/perfil.service';
 import { ProdutoService } from '../../servicos/produto.service';
+import { AuthService } from '../../servicos/auth.service';
 import { PerfilCriadorResposta } from '../../modelos/perfil.model';
+import { Usuario } from '../../modelos/usuario.model';
 
 @Component({
   selector: 'app-pagina-criador',
@@ -17,11 +19,13 @@ export class PaginaCriadorComponent implements OnInit {
   produtos: any[] = [];
   carregando = true;
   erro = '';
+  usuarioLogado: Partial<Usuario> | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private perfilService: PerfilService,
     private produtoService: ProdutoService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
@@ -34,6 +38,12 @@ export class PaginaCriadorComponent implements OnInit {
       this.carregando = false;
       return;
     }
+
+    // Carrega o usuário logado para verificar se é dono do perfil
+    this.authService.obterUsuarioLogado().subscribe({
+      next: (usuario) => { this.usuarioLogado = usuario; },
+      error: () => { this.usuarioLogado = null; }
+    });
 
     this.carregarDados(criadorId);
   }
@@ -67,6 +77,11 @@ export class PaginaCriadorComponent implements OnInit {
         this.carregando = false;
       }
     });
+  }
+
+  /** Retorna true se o usuário logado é o dono deste perfil */
+  get ehDono(): boolean {
+    return !!(this.usuarioLogado && this.perfil && this.usuarioLogado.id === this.perfil.usuarioId);
   }
 
   obterIniciais(): string {
