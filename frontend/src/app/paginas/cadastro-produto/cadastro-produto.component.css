@@ -1,267 +1,455 @@
-.cadastro-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* ==========================================
+   PUBLICAR PRODUTO
+   ========================================== */
+
+.publicar-pagina {
   min-height: 100vh;
-  padding: 2rem;
-  background-color: var(--cor-fundo-componente);
-  color: var(--cor-texto-componente);
-  font-family: 'Inter', sans-serif;
+  padding: var(--espaco-10) 0 var(--espaco-16);
+  background: var(--cor-fundo-principal);
+  color: var(--cor-texto-primario);
+  font-family: var(--fonte-principal);
 }
 
-.glass-panel {
-  background: var(--cor-glass-bg);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--cor-glass-borda);
-  border-radius: 16px;
-  padding: 3rem;
-  width: 100%;
-  max-width: 600px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-}
-
-.gradient-text {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  background: var(--gradiente-marca);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-align: center;
-}
-
-.subtitle {
-  text-align: center;
-  color: var(--cor-texto-secundario);
-  margin-bottom: 2rem;
-}
-
-.modern-form {
+.publicar-pagina__container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--espaco-8);
 }
 
-.form-group {
+/* ==========================================
+   CABEÇALHO
+   ========================================== */
+
+.publicar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.publicar-header__breadcrumb {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-terciario);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: var(--espaco-2);
+}
+
+.publicar-header__titulo {
+  font-size: clamp(var(--texto-2xl), 3vw, var(--texto-4xl));
+  font-weight: var(--peso-bold);
+  letter-spacing: -0.04em;
+}
+
+.publicar-header__subtitulo {
+  font-size: var(--texto-base);
+  color: var(--cor-texto-terciario);
+  margin-top: var(--espaco-2);
+}
+
+/* ==========================================
+   ALERTA
+   ========================================== */
+
+.alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-3);
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-lg);
+  font-size: var(--texto-sm);
+  line-height: var(--linha-relaxada);
+  border: 1px solid transparent;
+}
+
+.alerta__icone { flex-shrink: 0; margin-top: 2px; }
+
+.alerta--erro {
+  background: var(--cor-erro-sutil);
+  border-color: var(--cor-erro-borda);
+  color: var(--cor-erro);
+}
+
+/* ==========================================
+   LAYOUT DO FORMULÁRIO
+   ========================================== */
+
+.publicar-form__layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--espaco-8);
+  align-items: flex-start;
+}
+
+.publicar-form__principal,
+.publicar-form__lateral {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--espaco-6);
 }
 
-.form-row {
+/* ==========================================
+   SEÇÕES DO FORMULÁRIO
+   ========================================== */
+
+.form-secao {
+  background: var(--cor-fundo-card);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-xl);
+  padding: var(--espaco-6);
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: var(--espaco-5);
 }
 
-.half {
+.form-secao__titulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semibold);
+  color: var(--cor-texto-primario);
+  letter-spacing: -0.01em;
+  padding-bottom: var(--espaco-4);
+  border-bottom: 1px solid var(--borda-cor);
+}
+
+/* ==========================================
+   CAMPOS
+   ========================================== */
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+}
+
+.campo-grupo--metade {
   flex: 1;
 }
 
-label {
-  font-weight: 500;
-  color: var(--cor-texto-componente);
-  font-size: 0.9rem;
-}
-
-input, textarea {
-  background: var(--cor-fundo-componente);
-  border: 1px solid var(--cor-fundo-borda);
-  color: var(--cor-texto-componente);
-  padding: 1rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-}
-
-input:focus, textarea:focus {
-  border-color: var(--cor-marca-primaria);
-  box-shadow: 0 0 0 2px var(--cor-marca-primaria-glow);
-}
-
-select {
-  background: var(--cor-fundo-componente);
-  border: 1px solid var(--cor-fundo-borda);
-  color: var(--cor-texto-componente);
-  padding: 1rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  cursor: pointer;
-}
-
-select:focus {
-  border-color: var(--cor-marca-primaria);
-  box-shadow: 0 0 0 2px var(--cor-marca-primaria-glow);
-}
-
-select option {
-  background: var(--cor-fundo-componente);
-  color: var(--cor-texto-componente);
-}
-
-/* Tags / Gêneros Musicais */
-.tags-container {
+.campo-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--espaco-4);
 }
 
-.tag-chip {
-  background: var(--cor-fundo-card);
-  border: 1px solid transparent;
-  color: var(--cor-texto-componente);
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
+.campo-label {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-secundario);
 }
 
-.tag-chip:hover {
-  background: var(--cor-fundo-borda);
+.campo-obrigatorio {
+  color: var(--cor-erro);
+  margin-left: 2px;
 }
 
-.tag-chip.active {
-  background: var(--cor-marca-primaria-sutil);
-  color: var(--cor-marca-primaria);
+.campo-dica {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-desabilitado);
+}
+
+.campo-input {
+  width: 100%;
+  padding: var(--espaco-3) var(--espaco-4);
+  background: var(--cor-fundo-elevado);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-lg);
+  color: var(--cor-texto-primario);
+  font-size: var(--texto-sm);
+  font-family: var(--fonte-principal);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.campo-input::placeholder {
+  color: var(--cor-texto-desabilitado);
+}
+
+.campo-input:focus {
   border-color: var(--cor-marca-primaria);
-  font-weight: 600;
+  box-shadow: 0 0 0 3px var(--cor-marca-primaria-glow);
 }
 
-/* File Upload Area */
-.file-drop-area {
+.campo-textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: var(--linha-relaxada);
+}
+
+/* Campo com prefixo */
+.campo-prefixo-wrapper {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 120px;
-  border: 2px dashed var(--cor-fundo-borda);
-  border-radius: 8px;
-  background: var(--cor-fundo-elevado);
-  transition: all 0.2s;
-  cursor: pointer;
 }
 
-.file-drop-area:hover {
+.campo-prefixo {
+  position: absolute;
+  left: var(--espaco-4);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-terciario);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.campo-input--com-prefixo {
+  padding-left: calc(var(--espaco-4) + 28px);
+}
+
+.campo-erro-msg {
+  font-size: var(--texto-xs);
+  color: var(--cor-erro);
+}
+
+/* Select */
+.campo-select {
+  width: 100%;
+  padding: var(--espaco-3) var(--espaco-4);
+  background: var(--cor-fundo-elevado);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-lg);
+  color: var(--cor-texto-primario);
+  font-size: var(--texto-sm);
+  font-family: var(--fonte-principal);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6b76' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--espaco-4) center;
+}
+
+.campo-select:focus {
+  border-color: var(--cor-marca-primaria);
+  box-shadow: 0 0 0 3px var(--cor-marca-primaria-glow);
+}
+
+.campo-select option {
+  background: var(--cor-fundo-card);
+  color: var(--cor-texto-primario);
+}
+
+/* ==========================================
+   TAGS
+   ========================================== */
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+}
+
+.tag-chip {
+  padding: var(--espaco-2) var(--espaco-4);
+  background: var(--cor-fundo-elevado);
+  border: 1px solid var(--borda-cor);
+  border-radius: var(--raio-completo);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  transition: var(--transicao-rapida);
+  font-family: var(--fonte-principal);
+}
+
+.tag-chip:hover {
+  border-color: var(--borda-cor-hover);
+  color: var(--cor-texto-primario);
+}
+
+.tag-chip--ativa {
+  background: var(--cor-marca-primaria-sutil);
+  border-color: var(--cor-marca-primaria);
+  color: var(--cor-marca-primaria-light);
+  font-weight: var(--peso-semibold);
+}
+
+/* ==========================================
+   ÁREA DE UPLOAD
+   ========================================== */
+
+.upload-area {
+  position: relative;
+  border: 2px dashed var(--borda-cor);
+  border-radius: var(--raio-xl);
+  padding: var(--espaco-8) var(--espaco-6);
+  background: var(--cor-fundo-elevado);
+  transition: border-color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-area:hover {
   border-color: var(--cor-marca-primaria);
   background: var(--cor-marca-primaria-sutil);
 }
 
-.file-msg {
-  color: var(--cor-texto-secundario);
-  font-size: 0.95rem;
+.upload-area--com-arquivo {
+  border-color: var(--cor-sucesso);
+  border-style: solid;
+  background: var(--cor-sucesso-sutil);
+}
+
+.upload-area__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.upload-area__conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaco-3);
+  text-align: center;
   pointer-events: none;
 }
 
-.file-input {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 100%;
-  cursor: pointer;
-  opacity: 0;
+.upload-area__icone {
+  color: var(--cor-texto-desabilitado);
 }
 
-/* Status & Progress */
-.status-area {
-  padding: 1rem;
-  background: var(--cor-fundo-elevado);
-  border-radius: 8px;
-  text-align: center;
+.upload-area__icone--sucesso {
+  color: var(--cor-sucesso);
 }
 
-.progress-container {
+.upload-area__texto {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--espaco-1);
+}
+
+.upload-area__msg {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-secundario);
+}
+
+.upload-area__msg--sucesso {
+  color: var(--cor-sucesso);
+  word-break: break-all;
+}
+
+.upload-area__hint {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-desabilitado);
+}
+
+/* ==========================================
+   STATUS DE ENVIO
+   ========================================== */
+
+.status-area {
+  background: var(--cor-fundo-elevado);
+  border-radius: var(--raio-lg);
+  padding: var(--espaco-4);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medium);
+  color: var(--cor-texto-componente);
+}
+
+.status-item--coluna {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.status-item--sucesso {
+  color: var(--cor-sucesso);
+}
+
+.status-item--erro {
+  color: var(--cor-erro);
+}
+
+.status-progresso {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-terciario);
+  text-align: center;
 }
 
 .progress-bar-bg {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background: var(--cor-fundo-borda);
-  border-radius: 4px;
+  border-radius: var(--raio-completo);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
   background: var(--gradiente-marca-horizontal);
-  width: 0%;
   transition: width 0.3s ease;
+  border-radius: var(--raio-completo);
 }
 
-.progress-text {
-  font-size: 0.85rem;
-  color: var(--cor-texto-secundario);
-}
+/* ==========================================
+   BOTÃO PUBLICAR
+   ========================================== */
 
-.status-msg {
+.btn-publicar {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  color: var(--cor-texto-componente);
-  font-weight: 500;
-}
-
-.success {
-  color: var(--cor-sucesso);
-}
-
-/* Button */
-.btn-primary {
+  gap: var(--espaco-2);
+  padding: var(--espaco-4);
   background: var(--cor-marca-primaria);
   color: #fff;
   border: none;
-  padding: 1rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: var(--raio-xl);
+  font-size: var(--texto-base);
+  font-weight: var(--peso-semibold);
+  font-family: var(--fonte-principal);
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: background 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+  min-height: 52px;
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-publicar:hover:not(:disabled) {
   background: var(--cor-marca-primaria-hover);
   transform: translateY(-2px);
 }
 
-.btn-primary:disabled {
-  background: var(--cor-fundo-borda);
-  color: var(--cor-texto-desabilitado);
+.btn-publicar:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-publicar:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.alert-error {
-  background: var(--cor-erro-sutil);
-  border: 1px solid var(--cor-erro);
-  color: var(--cor-erro);
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-  margin-bottom: 1.5rem;
+/* ==========================================
+   RESPONSIVIDADE
+   ========================================== */
+
+@media (max-width: 1024px) {
+  .publicar-form__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .publicar-form__lateral {
+    order: -1;
+  }
 }
 
-/* Spinner animado */
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-left-color: var(--cor-marca-primaria);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@media (max-width: 640px) {
+  .campo-row {
+    flex-direction: column;
+  }
 }

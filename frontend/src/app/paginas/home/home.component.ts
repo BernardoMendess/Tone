@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../servicos/auth.service';
-import { Router } from '@angular/router';
 import { Usuario } from '../../modelos/usuario.model';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
@@ -36,5 +36,17 @@ export class HomeComponent implements OnInit {
         this.router.navigate(['/login']);
       }
     });
+  }
+
+  /** Saudação baseada na hora do dia (somente para UI) */
+  get saudacao(): string {
+    const hora = new Date().getHours();
+    if (hora >= 5 && hora < 12) return 'Bom dia';
+    if (hora >= 12 && hora < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
+
+  get podePublicar(): boolean {
+    return this.usuario?.tipoPerfil === 'CRIADOR' || this.usuario?.tipoPerfil === 'ADMIN';
   }
 }

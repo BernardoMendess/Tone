@@ -1,0 +1,251 @@
+<div class="landing" id="pagina-landing">
+
+  <!-- ==========================================
+       NAVBAR DA LANDING (pública)
+       ========================================== -->
+  <nav class="landing__nav" role="navigation">
+    <div class="landing__nav-container">
+      <a routerLink="/" class="landing__nav-logo">
+        <span class="landing__logo-texto">tone</span>
+        <span class="landing__logo-dot"></span>
+      </a>
+      <div class="landing__nav-acoes">
+        <a routerLink="/login" class="landing__nav-btn-ghost" id="btn-nav-login">Entrar</a>
+        <a routerLink="/cadastro" class="landing__nav-btn-primario" id="btn-nav-cadastro">Criar conta</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==========================================
+       HERO SECTION
+       ========================================== -->
+  <section class="hero" id="hero">
+    <div class="hero__fundo-gradiente" aria-hidden="true"></div>
+    <div class="hero__grade" aria-hidden="true"></div>
+
+    <div class="hero__conteudo">
+      <div class="hero__badge animar-entrada-cima">
+        <span class="hero__badge-ponto"></span>
+        Marketplace de timbres para guitarra
+      </div>
+
+      <h1 class="hero__titulo animar-entrada-cima atraso-1">
+        O lugar onde os<br>
+        <span class="texto-gradiente">melhores timbres</span><br>
+        são negociados
+      </h1>
+
+      <p class="hero__subtitulo animar-entrada-cima atraso-2">
+        Compre e venda captures, presets e impulse responses.<br>
+        Feito para guitarristas que levam o som a sério.
+      </p>
+
+      <div class="hero__ctas animar-entrada-cima atraso-3">
+        <a routerLink="/marketplace" class="btn-primario-hero" id="btn-hero-explorar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          Explorar Marketplace
+        </a>
+        <a routerLink="/cadastro" class="btn-ghost-hero" id="btn-hero-vender">
+          Começar a vender
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Mockup visual com cards de produto -->
+      <div class="hero__mockup animar-entrada-cima atraso-4" aria-hidden="true">
+        <div class="mockup__card mockup__card--1">
+          <div class="mockup__card-capa mockup__card-capa--1">
+            <div class="mockup__placeholder-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+          </div>
+          <div class="mockup__card-info">
+            <span class="mockup__card-categoria">Capture</span>
+            <span class="mockup__card-nome">Mesa Boogie MkV</span>
+            <span class="mockup__card-preco">R$ 29,90</span>
+          </div>
+        </div>
+        <div class="mockup__card mockup__card--2">
+          <div class="mockup__card-capa mockup__card-capa--2">
+            <div class="mockup__placeholder-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="4"/></svg>
+            </div>
+          </div>
+          <div class="mockup__card-info">
+            <span class="mockup__card-categoria">Preset</span>
+            <span class="mockup__card-nome">Rock Clássico 80s</span>
+            <span class="mockup__card-preco">R$ 49,90</span>
+          </div>
+        </div>
+        <div class="mockup__card mockup__card--3">
+          <div class="mockup__card-capa mockup__card-capa--3">
+            <div class="mockup__placeholder-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            </div>
+          </div>
+          <div class="mockup__card-info">
+            <span class="mockup__card-categoria">IR</span>
+            <span class="mockup__card-nome">V30 Greenback Pack</span>
+            <span class="mockup__card-preco">R$ 19,90</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SEÇÃO DE BENEFÍCIOS
+       ========================================== -->
+  <section class="beneficios" id="beneficios">
+    <div class="container">
+      <div class="secao-header">
+        <span class="secao-tag">Por que Tone</span>
+        <h2 class="secao-titulo">Tudo que você precisa<br>em uma plataforma</h2>
+        <p class="secao-subtitulo">
+          Construída do zero para ativos de guitarra. Sem generalismo.
+        </p>
+      </div>
+
+      <div class="beneficios__grid">
+        <div class="beneficio-card" *ngFor="let b of beneficios; let i = index" [class]="'animar-entrada-cima atraso-' + (i + 1)">
+          <div class="beneficio-card__icone">
+            <!-- Upload icon -->
+            <svg *ngIf="b.icone === 'upload'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <!-- Share icon -->
+            <svg *ngIf="b.icone === 'share'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <!-- Store icon -->
+            <svg *ngIf="b.icone === 'store'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <!-- Download icon -->
+            <svg *ngIf="b.icone === 'download'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <!-- Shield icon -->
+            <svg *ngIf="b.icone === 'shield'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <!-- Search icon -->
+            <svg *ngIf="b.icone === 'search'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <h3 class="beneficio-card__titulo">{{ b.titulo }}</h3>
+          <p class="beneficio-card__descricao">{{ b.descricao }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SEÇÃO COMO FUNCIONA
+       ========================================== -->
+  <section class="como-funciona" id="como-funciona">
+    <div class="container">
+      <div class="secao-header">
+        <span class="secao-tag">Simples assim</span>
+        <h2 class="secao-titulo">Como funciona</h2>
+        <p class="secao-subtitulo">
+          Em três passos, você está comprando ou vendendo timbres.
+        </p>
+      </div>
+
+      <div class="passos">
+        <div class="passo" *ngFor="let p of passos; let i = index" [class]="'animar-entrada-cima atraso-' + (i + 1)">
+          <div class="passo__numero texto-gradiente">{{ p.numero }}</div>
+          <div class="passo__icone">
+            <!-- User icon -->
+            <svg *ngIf="p.icone === 'user'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <!-- Upload icon -->
+            <svg *ngIf="p.icone === 'upload'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <!-- Currency icon -->
+            <svg *ngIf="p.icone === 'currency'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3 class="passo__titulo">{{ p.titulo }}</h3>
+          <p class="passo__descricao">{{ p.descricao }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SEÇÃO CATEGORIAS
+       ========================================== -->
+  <section class="categorias" id="categorias">
+    <div class="container">
+      <div class="secao-header">
+        <span class="secao-tag">Catálogo</span>
+        <h2 class="secao-titulo">Explore as categorias</h2>
+        <p class="secao-subtitulo">
+          Três formatos, infinitas possibilidades de som.
+        </p>
+      </div>
+
+      <div class="categorias__grid">
+        <div
+          class="categoria-card"
+          *ngFor="let c of categorias; let i = index"
+          [class]="'categoria-card--' + c.cor + ' animar-entrada-cima atraso-' + (i + 1)"
+        >
+          <div class="categoria-card__topo">
+            <div class="categoria-card__placeholder">
+              <div class="categoria-card__barra"></div>
+              <div class="categoria-card__barra categoria-card__barra--2"></div>
+              <div class="categoria-card__barra categoria-card__barra--3"></div>
+            </div>
+          </div>
+          <div class="categoria-card__corpo">
+            <span class="categoria-card__tag">{{ c.tag }}</span>
+            <h3 class="categoria-card__nome">{{ c.nome }}</h3>
+            <p class="categoria-card__descricao">{{ c.descricao }}</p>
+            <a routerLink="/marketplace" class="categoria-card__link">
+              Explorar
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SEÇÃO CTA FINAL
+       ========================================== -->
+  <section class="cta-final" id="cta-final">
+    <div class="container">
+      <div class="cta-final__card">
+        <div class="cta-final__fundo-glow" aria-hidden="true"></div>
+        <h2 class="cta-final__titulo">Pronto para elevar seu som?</h2>
+        <p class="cta-final__subtitulo">
+          Junte-se a criadores e guitarristas que já estão no Tone.
+        </p>
+        <div class="cta-final__acoes">
+          <a routerLink="/cadastro" class="btn-primario-hero" id="btn-cta-final-cadastro">
+            Criar conta grátis
+          </a>
+          <a routerLink="/login" class="btn-ghost-hero" id="btn-cta-final-login">
+            Já tenho conta
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing__footer">
+    <div class="container">
+      <div class="landing__footer-conteudo">
+        <div class="landing__footer-marca">
+          <span class="landing__logo-texto">tone</span>
+          <span class="landing__logo-dot"></span>
+        </div>
+        <span class="landing__footer-copy">
+          © {{ 2025 }} Tone. Feito para guitarristas.
+        </span>
+        <div class="landing__footer-links">
+          <a routerLink="/login" class="landing__footer-link">Login</a>
+          <a routerLink="/cadastro" class="landing__footer-link">Cadastro</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</div>
