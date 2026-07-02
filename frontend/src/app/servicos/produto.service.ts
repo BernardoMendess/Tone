@@ -33,4 +33,8 @@ export class ProdutoService {
       withCredentials: true
     });
   }
+
+  listarProdutosPorCriador(criadorId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}?criadorId=${criadorId}`);
+  }
 }

@@ -57,4 +57,16 @@ public class ProdutoControlador {
         String presignedUrl = produtoServico.gerarUrlDownload(id);
         return ResponseEntity.ok(presignedUrl);
     }
+
+    @GetMapping
+    public ResponseEntity<java.util.List<com.tone.controlador.dto.ProdutoDetalheResponseDTO>> listarProdutos(
+            @RequestParam(required = false) Long criadorId
+    ) {
+        if (criadorId != null) {
+            java.util.List<com.tone.controlador.dto.ProdutoDetalheResponseDTO> produtos = 
+                    produtoServico.buscarPorCriadorEStatus(criadorId, com.tone.modelo.enums.StatusProduto.PUBLICADO);
+            return ResponseEntity.ok(produtos);
+        }
+        return ResponseEntity.ok(java.util.Collections.emptyList());
+    }
 }

@@ -138,4 +138,25 @@ public class ProdutoServico {
         return produtoRepositorio.findById(id)
                 .orElseThrow(() -> new ProdutoNaoEncontradoException(id.toString()));
     }
+
+    /**
+     * Busca todos os produtos de um criador com o status informado e os retorna formatados.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<com.tone.controlador.dto.ProdutoDetalheResponseDTO> buscarPorCriadorEStatus(Long criadorId, StatusProduto status) {
+        return produtoRepositorio.findByCriadorIdAndStatus(criadorId, status).stream()
+                .map(produto -> com.tone.controlador.dto.ProdutoDetalheResponseDTO.builder()
+                        .id(produto.getId())
+                        .nome(produto.getNome())
+                        .descricao(produto.getDescricao())
+                        .preco(produto.getPreco())
+                        .videoUrl(produto.getVideoUrl())
+                        .categoriaNome(produto.getCategoria() != null ? produto.getCategoria().getNome() : null)
+                        .subcategoriaNome(produto.getSubcategoria() != null ? produto.getSubcategoria().getNome() : null)
+                        .tags(produto.getTags())
+                        .criadorId(produto.getCriador().getId())
+                        .criadorNome(produto.getCriador().getNomeCompleto())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
 }
