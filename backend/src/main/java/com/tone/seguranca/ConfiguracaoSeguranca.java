@@ -38,6 +38,8 @@ public class ConfiguracaoSeguranca {
                                 "/api/auth/logout"
                         ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categorias").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/perfis/{usuarioId}").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/produtos").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFiltro, UsernamePasswordAuthenticationFilter.class);

@@ -1,0 +1,123 @@
+<div class="container-editar-perfil">
+  <div class="card-perfil">
+    <h2 class="card-titulo">Personalizar Perfil</h2>
+    <p class="card-subtitulo">Configure sua página pública e mostre sua identidade para os compradores.</p>
+
+    <!-- Feedbacks de erro e sucesso -->
+    <div *ngIf="mensagemErro" class="mensagem-feedback erro">
+      <span>⚠️ {{ mensagemErro }}</span>
+    </div>
+    <div *ngIf="mensagemSucesso" class="mensagem-feedback sucesso">
+      <span>✅ {{ mensagemSucesso }}</span>
+    </div>
+
+    <form [formGroup]="perfilForm" (ngSubmit)="onSubmit()">
+      <!-- Upload de Imagem de Perfil -->
+      <div class="form-group">
+        <label class="form-label">Foto de Perfil</label>
+        <div class="secao-avatar">
+          <div class="avatar-preview-container">
+            <img *ngIf="previewUrl || obterUrlCompletaFoto()" [src]="previewUrl || obterUrlCompletaFoto()" alt="Preview da Foto" class="avatar-preview">
+            <div *ngIf="!previewUrl && !obterUrlCompletaFoto()" class="avatar-placeholder">
+              {{ obterIniciais() }}
+            </div>
+          </div>
+          <div class="avatar-controles">
+            <label class="btn-upload-fake" for="input-foto">
+              Escolher Imagem
+            </label>
+            <input type="file" id="input-foto" class="input-file-oculto" (change)="onFileSelected($event)" accept="image/png, image/jpeg, image/webp">
+            <span class="avatar-regras">JPG, PNG ou WEBP. Máx 5MB. (Opcional)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biografia -->
+      <div class="form-group">
+        <label class="form-label" for="bio">Biografia</label>
+        <textarea 
+          id="bio" 
+          class="textarea-bio" 
+          formControlName="biografia" 
+          placeholder="Conte um pouco sobre sua trajetória, guitarras, amplificadores e timbres..."
+          maxlength="1000">
+        </textarea>
+        <span class="contador-caracteres" [class.limite-atingido]="caracteresRestantes === 0">
+          {{ caracteresRestantes }} caracteres restantes
+        </span>
+      </div>
+
+      <!-- Redes Sociais -->
+      <div class="form-group">
+        <label class="form-label">Redes Sociais & Links (Opcionais)</label>
+        <div class="grid-redes-sociais">
+          
+          <!-- Instagram -->
+          <div class="form-group">
+            <span class="avatar-regras">Instagram</span>
+            <div class="input-com-icone">
+              <span class="prefixo-rede">📸</span>
+              <input 
+                type="text" 
+                class="input-text" 
+                formControlName="instagramUrl" 
+                placeholder="https://instagram.com/seuuser">
+            </div>
+          </div>
+
+          <!-- YouTube -->
+          <div class="form-group">
+            <span class="avatar-regras">YouTube</span>
+            <div class="input-com-icone">
+              <span class="prefixo-rede">🎥</span>
+              <input 
+                type="text" 
+                class="input-text" 
+                formControlName="youtubeUrl" 
+                placeholder="https://youtube.com/c/seucanal">
+            </div>
+          </div>
+
+          <!-- SoundCloud -->
+          <div class="form-group">
+            <span class="avatar-regras">SoundCloud</span>
+            <div class="input-com-icone">
+              <span class="prefixo-rede">🎵</span>
+              <input 
+                type="text" 
+                class="input-text" 
+                formControlName="soundcloudUrl" 
+                placeholder="https://soundcloud.com/seuuser">
+            </div>
+          </div>
+
+          <!-- Site Pessoal -->
+          <div class="form-group">
+            <span class="avatar-regras">Site Pessoal / Linktree</span>
+            <div class="input-com-icone">
+              <span class="prefixo-rede">🔗</span>
+              <input 
+                type="text" 
+                class="input-text" 
+                formControlName="sitePessoalUrl" 
+                placeholder="https://seusite.com">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Botões de Ações -->
+      <div class="acoes-form">
+        <button type="button" class="btn-cancelar" (click)="cancelar()" [disabled]="statusEnvio !== 'IDLE'">
+          Voltar
+        </button>
+        <button type="submit" class="btn-salvar" [disabled]="perfilForm.invalid || statusEnvio !== 'IDLE'">
+          <span *ngIf="statusEnvio !== 'IDLE'" class="spinner"></span>
+          {{ obterTextoBotao() }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

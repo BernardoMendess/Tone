@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { criadorOuAdminGuard } from './guards/criador-ou-admin.guard';
 
 export const routes: Routes = [
   {
@@ -31,6 +32,17 @@ export const routes: Routes = [
       import('./paginas/verificar-email/verificar-email.component').then(
         (m) => m.VerificarEmailComponent
       ),
+  },
+  {
+    path: 'perfil/editar',
+    loadComponent: () =>
+      import('./paginas/editar-perfil/editar-perfil.component').then((m) => m.EditarPerfilComponent),
+    canActivate: [authGuard, criadorOuAdminGuard]
+  },
+  {
+    path: 'criador/:id',
+    loadComponent: () =>
+      import('./paginas/pagina-criador/pagina-criador.component').then((m) => m.PaginaCriadorComponent)
   },
   {
     path: '',

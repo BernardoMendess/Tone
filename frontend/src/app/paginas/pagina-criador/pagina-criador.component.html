@@ -1,0 +1,107 @@
+<div class="container-criador">
+  
+  <!-- Estado de Carregamento -->
+  <div *ngIf="carregando" class="tela-mensagem">
+    <div class="spinner"></div>
+    <p>Carregando perfil do artista...</p>
+  </div>
+
+  <!-- Estado de Erro -->
+  <div *ngIf="!carregando && erro" class="tela-mensagem">
+    <span>⚠️</span>
+    <p>{{ erro }}</p>
+    <button (click)="voltarHome()">Voltar para a Home</button>
+  </div>
+
+  <!-- Conteúdo Principal -->
+  <div *ngIf="!carregando && !erro && perfil">
+    
+    <!-- Banner de Capa -->
+    <div class="banner-capa">
+      <div class="banner-overlay"></div>
+    </div>
+
+    <!-- Informações do Perfil -->
+    <div class="area-perfil-info">
+      
+      <!-- Avatar circular -->
+      <div class="avatar-criador-container">
+        <img *ngIf="perfil.fotoPerfilUrl" [src]="perfil.fotoPerfilUrl" alt="Foto de {{ perfil.nomeCompleto }}" class="avatar-criador">
+        <div *ngIf="!perfil.fotoPerfilUrl" class="avatar-iniciais">
+          {{ obterIniciais() }}
+        </div>
+      </div>
+
+      <!-- Nome e Badge -->
+      <h1 class="nome-criador">{{ perfil.nomeCompleto }}</h1>
+      <span class="tag-badge-criador">Artista / Criador</span>
+
+      <!-- Biografia -->
+      <p *ngIf="perfil.biografia" class="biografia-criador">{{ perfil.biografia }}</p>
+      <p *ngIf="!perfil.biografia" class="biografia-criador"><i>Este criador ainda não escreveu uma biografia.</i></p>
+
+      <!-- Redes Sociais -->
+      <div class="redes-criador" *ngIf="temRedesSociais()">
+        
+        <!-- Instagram -->
+        <a *ngIf="perfil.instagramUrl" [href]="perfil.instagramUrl" target="_blank" class="link-rede">
+          <span class="icone-rede">📸</span> Instagram
+        </a>
+
+        <!-- YouTube -->
+        <a *ngIf="perfil.youtubeUrl" [href]="perfil.youtubeUrl" target="_blank" class="link-rede">
+          <span class="icone-rede">🎥</span> YouTube
+        </a>
+
+        <!-- SoundCloud -->
+        <a *ngIf="perfil.soundcloudUrl" [href]="perfil.soundcloudUrl" target="_blank" class="link-rede">
+          <span class="icone-rede">🎵</span> SoundCloud
+        </a>
+
+        <!-- Site Pessoal -->
+        <a *ngIf="perfil.sitePessoalUrl" [href]="perfil.sitePessoalUrl" target="_blank" class="link-rede">
+          <span class="icone-rede">🔗</span> Website
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- Grade de Portfólio (Produtos) -->
+    <div class="secao-portfolio">
+      <h2 class="titulo-portfolio">Portfólio de Timbres</h2>
+      
+      <!-- Lista de Produtos -->
+      <div class="grid-produtos" *ngIf="produtos.length > 0">
+        <div class="card-produto" *ngFor="let produto of produtos">
+          
+          <div class="produto-topo">
+            <span class="categoria-tag">{{ produto.categoriaNome || 'Timbre' }}</span>
+            <span class="preco-tag">{{ produto.preco | currency:'BRL':'symbol':'1.2-2' }}</span>
+          </div>
+
+          <h3 class="produto-titulo">{{ produto.nome }}</h3>
+          <p class="produto-desc">{{ produto.descricao }}</p>
+
+          <div class="tags-container" *ngIf="produto.tags && produto.tags.length > 0">
+            <span class="tag-produto" *ngFor="let tag of produto.tags">#{{ tag }}</span>
+          </div>
+
+          <button class="btn-detalhes" (click)="verDetalhesProduto(produto.id)">
+            Ver Detalhes
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Estado Vazio do Portfólio -->
+      <div class="portfolio-vazio" *ngIf="produtos.length === 0">
+        <div class="portfolio-vazio-icone">🎸</div>
+        <p>Este criador ainda não publicou presets ou Impulse Responses.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
