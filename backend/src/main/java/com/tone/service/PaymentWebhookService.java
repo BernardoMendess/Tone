@@ -76,11 +76,17 @@ public class PaymentWebhookService {
         Order order = orderRepository.findByGatewayTransactionIdForUpdate(evt.gatewayTransactionId())
                 .orElseThrow(() -> ApiException.notFound("Transação não encontrada."));
 
+        // Re-check inside pessimistic lock so concurrent duplicate deliveries of the same eventId return idempotent 204
+        if (paymentEventRepository.existsByGatewayEventId(evt.eventId())) {
+            log.debug("Evento de webhook já processado concorrentemente (no-op idempotente): {}", evt.eventId());
+            return;
+        }
+
         Instant now = clock.instant();
         String outcome = switch (evt.eventType()) {
             case PAYMENT_CONFIRMED -> handleConfirmed(order, evt, now);
             case PAYMENT_FAILED -> handleFailed(order, now);
-            case PAYMENT_REFUNDED -> handleRefunded(order);
+            case PAYMENT_REFUNDED -> handleRefunded(order, evt);
         };
 
         paymentEventRepository.save(PaymentEvent.record(
@@ -125,9 +131,14 @@ public class PaymentWebhookService {
         return "APPLIED";
     }
 
-    private String handleRefunded(Order order) {
+    private String handleRefunded(Order order, OrderDtos.PaymentWebhookEvent evt) {
         if (order.getStatus() != OrderStatus.PAID) {
             return "IGNORED_INVALID_TRANSITION";
+        }
+        if (evt.amount().compareTo(order.getTotalAmount()) != 0) {
+            log.error("Estorno parcial ou divergente no pedido {}: esperado={}, recebido={}",
+                    order.getOrderCode(), order.getTotalAmount(), evt.amount());
+            return "REFUND_AMOUNT_MISMATCH";
         }
         refundService.applyGatewayRefund(order, "Estorno/Chargeback confirmado pelo gateway");
         return "APPLIED";

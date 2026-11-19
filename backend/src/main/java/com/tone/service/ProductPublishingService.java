@@ -14,6 +14,7 @@ import com.tone.repository.ProductRepository;
 import com.tone.repository.ProductVersionRepository;
 import com.tone.service.mapper.ProductCardMapper;
 import com.tone.storage.FileStorageService;
+import com.tone.storage.StorageSupport;
 import com.tone.storage.StoredObject;
 import com.tone.upload.UploadPolicy;
 import org.springframework.cache.annotation.CacheEvict;
@@ -89,14 +90,15 @@ public class ProductPublishingService {
                 processedDemo.contentType()
         );
 
+        String safePatchFilename = StorageSupport.sanitizeFilename(patchFile.getOriginalFilename());
         StoredObject storedPatch;
         try (InputStream patchStream = patchFile.getInputStream()) {
             storedPatch = fileStorageService.storePrivateFile(
                     "patches",
-                    patchFile.getOriginalFilename() != null ? patchFile.getOriginalFilename() : "patch.bin",
+                    safePatchFilename,
                     patchStream,
                     patchFile.getSize(),
-                    patchFile.getContentType()
+                    "application/octet-stream"
             );
         }
 
@@ -128,7 +130,7 @@ public class ProductPublishingService {
         version.setVersionNumber(versionLabel);
         version.setChangelog("Lançamento inicial do timbre.");
         version.setPatchFileKey(storedPatch.storageKey());
-        version.setOriginalFilename(patchFile.getOriginalFilename() != null ? patchFile.getOriginalFilename() : "patch.bin");
+        version.setOriginalFilename(safePatchFilename);
         version.setFileSizeBytes(storedPatch.sizeBytes());
         version.setChecksumSha256(storedPatch.sha256Checksum());
         productVersionRepository.save(version);

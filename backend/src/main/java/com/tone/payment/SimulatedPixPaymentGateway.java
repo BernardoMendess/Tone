@@ -51,13 +51,15 @@ public class SimulatedPixPaymentGateway implements PaymentGateway {
         }
 
         String pixCode = null;
-        Instant pixExpires = null;
+        Instant chargeExpires;
         if (method == PaymentMethod.PIX) {
             pixCode = buildEmvPixBrCode(orderCode, totalAmount);
-            pixExpires = clock.instant().plus(Duration.ofMinutes(30));
+            chargeExpires = clock.instant().plus(Duration.ofMinutes(30));
+        } else {
+            chargeExpires = clock.instant().plus(Duration.ofMinutes(15));
         }
 
-        return new GatewayChargeResult(txId, pixCode, pixExpires, splitRefs);
+        return new GatewayChargeResult(txId, pixCode, chargeExpires, splitRefs);
     }
 
     private String buildEmvPixBrCode(String txRef, BigDecimal amount) {

@@ -14,8 +14,15 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -87,5 +94,42 @@ class AuthSecurityIntegrationTest {
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "email", email, "password", "ValidPassword123!"))))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void concurrentRefreshWithSameTokenAllowsAtMostOneRotationAndTriggersTheftRevocation() throws Exception {
+        String email = "race-refresh-" + UUID.randomUUID() + "@tone.com";
+        MvcResult reg = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "fullName", "Race User", "email", email, "password", "VeryStrongPass123!"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        Cookie refreshCookie = reg.getResponse().getCookie(AuthController.REFRESH_COOKIE_NAME);
+        assertThat(refreshCookie).isNotNull();
+
+        int threads = 6;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Integer>> futures = IntStream.range(0, threads).mapToObj(i -> pool.submit(() -> {
+            start.await();
+            return mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie))
+                    .andReturn()
+                    .getResponse()
+                    .getStatus();
+        })).toList();
+        start.countDown();
+
+        int succeeded = 0;
+        int unauthorized = 0;
+        for (Future<Integer> f : futures) {
+            int code = f.get(15, TimeUnit.SECONDS);
+            if (code == 200) succeeded++;
+            if (code == 401) unauthorized++;
+        }
+        pool.shutdown();
+
+        assertThat(succeeded).isEqualTo(1);
+        assertThat(unauthorized).isEqualTo(threads - 1);
     }
 }

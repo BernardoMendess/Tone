@@ -28,6 +28,9 @@ public class AudioProcessingService {
 
     private static final Logger log = LoggerFactory.getLogger(AudioProcessingService.class);
     private static final Set<String> ALLOWED_EXTS = Set.of("wav", "mp3", "flac", "ogg");
+    private static final int MAX_CHANNELS = 8;
+    private static final float MIN_SAMPLE_RATE = 8_000f;
+    private static final float MAX_SAMPLE_RATE = 192_000f;
 
     private final double targetLufs;
     private final int maxPreviewSeconds;
@@ -67,6 +70,8 @@ public class AudioProcessingService {
         if ("wav".equals(ext)) {
             try {
                 return processWavInPureJava(rawBytes);
+            } catch (ApiException ex) {
+                throw ex;
             } catch (Exception ex) {
                 log.warn("Falha ao processar WAV em Java puro ({}): {}", originalFilename, ex.getMessage());
                 throw ApiException.badRequest("Arquivo WAV inválido ou corrompido.");
@@ -81,22 +86,31 @@ public class AudioProcessingService {
     public ProcessedAudio processWavInPureJava(byte[] wavBytes) throws UnsupportedAudioFileException, IOException {
         try (AudioInputStream rawStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(wavBytes))) {
             AudioFormat sourceFormat = rawStream.getFormat();
+            int channels = sourceFormat.getChannels();
+            float srcRate = sourceFormat.getSampleRate();
+            if (channels < 1 || channels > MAX_CHANNELS || srcRate < MIN_SAMPLE_RATE || srcRate > MAX_SAMPLE_RATE) {
+                throw ApiException.badRequest("Parâmetros de áudio WAV fora dos limites suportados.");
+            }
+
             AudioFormat pcmFormat = new AudioFormat(
                     AudioFormat.Encoding.PCM_SIGNED,
-                    sourceFormat.getSampleRate(),
+                    srcRate,
                     16,
-                    sourceFormat.getChannels(),
-                    sourceFormat.getChannels() * 2,
-                    sourceFormat.getSampleRate(),
+                    channels,
+                    channels * 2,
+                    srcRate,
                     false
             );
 
-            try (AudioInputStream pcmStream = AudioSystem.getAudioInputStream(pcmFormat, rawStream)) {
-                byte[] pcmBytes = pcmStream.readAllBytes();
-                int channels = pcmFormat.getChannels();
-                float srcRate = pcmFormat.getSampleRate();
+            int maxSrcFrames = (int) Math.ceil(srcRate * maxPreviewSeconds);
+            int maxPcmBytes = Math.multiplyExact(maxSrcFrames, channels * 2);
 
+            try (AudioInputStream pcmStream = AudioSystem.getAudioInputStream(pcmFormat, rawStream)) {
+                byte[] pcmBytes = pcmStream.readNBytes(maxPcmBytes);
                 int frameCount = pcmBytes.length / (2 * channels);
+                if (frameCount == 0) {
+                    throw ApiException.badRequest("Arquivo WAV sem amostras válidas.");
+                }
                 double[] mono = new double[frameCount];
                 ByteBuffer bb = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN);
                 for (int i = 0; i < frameCount; i++) {
@@ -105,13 +119,6 @@ public class AudioProcessingService {
                         sum += bb.getShort() / 32768.0;
                     }
                     mono[i] = sum / channels;
-                }
-
-                int maxSrcFrames = (int) Math.min(mono.length, (long) srcRate * maxPreviewSeconds);
-                if (maxSrcFrames < mono.length) {
-                    double[] trimmed = new double[maxSrcFrames];
-                    System.arraycopy(mono, 0, trimmed, 0, maxSrcFrames);
-                    mono = trimmed;
                 }
 
                 double[] resampled = resampleLinear(mono, srcRate, targetSampleRate);

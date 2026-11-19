@@ -5,6 +5,7 @@ import com.tone.domain.enums.OrderStatus;
 import com.tone.domain.enums.PaymentEventType;
 import com.tone.domain.enums.PaymentMethod;
 import com.tone.domain.enums.SplitStatus;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -80,7 +81,7 @@ public final class OrderDtos {
             @NotBlank String eventId,
             @NotBlank String gatewayTransactionId,
             @NotNull PaymentEventType eventType,
-            @NotNull BigDecimal amount
+            @NotNull @DecimalMin("0.01") BigDecimal amount
     ) {}
 
     public record LibraryItemDto(

@@ -130,6 +130,78 @@ class PaymentWebhookIntegrationTest {
         // 4. PAYMENT_FAILED after PAID must NEVER revert order to FAILED
         sendSignedWebhook("evt-late-fail-" + UUID.randomUUID(), txId, PaymentEventType.PAYMENT_FAILED, total);
         assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);
+
+        // 5. PAYMENT_REFUNDED with partial/mismatched amount must NOT revoke full order
+        sendSignedWebhook("evt-partial-refund-" + UUID.randomUUID(), txId, PaymentEventType.PAYMENT_REFUNDED, new BigDecimal("1.00"));
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);
+
+        // 6. PAYMENT_REFUNDED with exact order amount refunds the order cleanly
+        sendSignedWebhook("evt-full-refund-" + UUID.randomUUID(), txId, PaymentEventType.PAYMENT_REFUNDED, total);
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    }
+
+    @Test
+    void concurrentDeliveriesWithIdenticalEventIdReturnIdempotent204AndRejectNonPositiveAmount() throws Exception {
+        String buyerToken = registerBuyer("webhook-same-evt-" + UUID.randomUUID() + "@tone.com");
+        Product product = productRepository.findBySlugWithCreator("dual-rectifier-modern-metal").orElseThrow();
+        int initialSales = product.getSalesCount();
+
+        mockMvc.perform(post("/api/cart/" + product.getId()).header("Authorization", "Bearer " + buyerToken))
+                .andExpect(status().isOk());
+
+        MvcResult checkoutRes = mockMvc.perform(post("/api/checkout")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("paymentMethod", "PIX"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode orderJson = objectMapper.readTree(checkoutRes.getResponse().getContentAsString());
+        UUID orderId = UUID.fromString(orderJson.get("id").asText());
+        String txId = orderJson.get("gatewayTransactionId").asText();
+        BigDecimal total = orderJson.get("totalAmount").decimalValue();
+
+        // Zero / negative amount must be rejected with 400 Bad Request
+        long tsZero = Instant.now().getEpochSecond();
+        String zeroBody = objectMapper.writeValueAsString(new OrderDtos.PaymentWebhookEvent(
+                "evt-zero-" + UUID.randomUUID(), txId, PaymentEventType.PAYMENT_CONFIRMED, BigDecimal.ZERO));
+        mockMvc.perform(post("/api/webhooks/payments")
+                        .header("X-Webhook-Timestamp", tsZero)
+                        .header("X-Webhook-Signature", webhookSigner.sign(tsZero, zeroBody))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(zeroBody))
+                .andExpect(status().isBadRequest());
+
+        // 6 concurrent HTTP deliveries with the EXACT SAME eventId must ALL return 204 No Content (no 409)
+        String sharedEventId = "evt-shared-" + UUID.randomUUID();
+        int threads = 6;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Future<Integer>> futures = IntStream.range(0, threads).mapToObj(i -> pool.submit(() -> {
+            latch.await();
+            long ts = Instant.now().getEpochSecond();
+            String body = objectMapper.writeValueAsString(
+                    new OrderDtos.PaymentWebhookEvent(sharedEventId, txId, PaymentEventType.PAYMENT_CONFIRMED, total));
+            return mockMvc.perform(post("/api/webhooks/payments")
+                            .header("X-Webhook-Timestamp", ts)
+                            .header("X-Webhook-Signature", webhookSigner.sign(ts, body))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andReturn()
+                    .getResponse()
+                    .getStatus();
+        })).toList();
+        latch.countDown();
+
+        for (Future<Integer> f : futures) {
+            assertThat(f.get(15, TimeUnit.SECONDS)).isEqualTo(204);
+        }
+        pool.shutdown();
+
+        assertThat(orderRepository.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.PAID);
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getSalesCount())
+                .isEqualTo(initialSales + 1);
     }
 
     private void sendSignedWebhook(String eventId, String txId, PaymentEventType type, BigDecimal amount) throws Exception {

@@ -64,8 +64,13 @@ public class CatalogController {
     }
 
     @GetMapping("/products/{productId}/reviews")
-    public List<CatalogDtos.ReviewDto> getReviews(@PathVariable UUID productId) {
-        return reviewService.listReviews(productId);
+    public List<CatalogDtos.ReviewDto> getReviews(
+            @PathVariable UUID productId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        UUID userId = principal != null ? principal.getId() : null;
+        UserRole role = principal != null ? principal.getRole() : null;
+        return reviewService.listReviews(productId, userId, role);
     }
 
     @PostMapping("/products/{productId}/reviews")

@@ -67,9 +67,9 @@ Tone/
 1. **Backend (porta `8080`):**
    ```bash
    cd backend
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
-   *(O perfil padrão `dev` aplica automaticamente a migração Flyway `V1__init_schema.sql`, gera os arquivos binários no cofre privado e sintetiza as 8 demos de guitarra normalizadas em -14 LUFS.)*
+   *(O perfil `dev` — obrigatório em desenvolvimento local, já configurado automaticamente por `.\run.ps1` / `run.bat` — aplica as migrações Flyway, gera os arquivos binários no cofre privado e sintetiza as 8 demos de guitarra normalizadas em -14 LUFS. Em produção, a aplicação opera em modo fail-closed exigindo perfil explícito e segredos fortes via variáveis de ambiente.)*
 
 2. **Frontend Angular (porta `4200` com proxy para `/api`):**
    ```bash

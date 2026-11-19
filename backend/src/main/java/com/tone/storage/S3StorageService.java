@@ -137,11 +137,15 @@ public class S3StorageService implements FileStorageService {
     ) {
         String safeName = StorageSupport.sanitizeFilename(downloadFilename);
         String disposition = inline ? "inline" : "attachment; filename=\"" + safeName + "\"";
+        String forcedContentType = inline
+                ? (storageKey.endsWith(".mp3") ? "audio/mpeg" : "audio/wav")
+                : "application/octet-stream";
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(storageKey)
                 .responseContentDisposition(disposition)
+                .responseContentType(forcedContentType)
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()

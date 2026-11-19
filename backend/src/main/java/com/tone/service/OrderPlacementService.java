@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,8 @@ import java.util.UUID;
  */
 @Service
 public class OrderPlacementService {
+
+    private static final Duration CHARGE_IN_FLIGHT_WINDOW = Duration.ofSeconds(60);
 
     public record PlacedOrder(
             UUID orderId,
@@ -70,11 +73,16 @@ public class OrderPlacementService {
         User buyer = userRepository.findByIdForUpdate(buyerId)
                 .orElseThrow(() -> ApiException.notFound("Usuário não encontrado."));
 
+        Instant now = clock.instant();
         Optional<Order> existingOpt = orderRepository.findByBuyerIdAndIdempotencyKey(buyerId, idempotencyKey);
         if (existingOpt.isPresent()) {
             Order existing = existingOpt.get();
             if (existing.hasChargeAttached() || existing.getStatus() != OrderStatus.PENDING_PAYMENT) {
                 return new PlacedOrder(existing.getId(), existing.getOrderCode(), existing.getTotalAmount(), true, List.of());
+            }
+            if (existing.getUpdatedAt() != null && now.isBefore(existing.getUpdatedAt().plus(CHARGE_IN_FLIGHT_WINDOW))) {
+                throw ApiException.conflict(
+                        "Checkout com esta Idempotency-Key já está em processamento. Aguarde alguns segundos.");
             }
             List<PaymentGateway.SplitInstruction> instructions = toSplitInstructions(
                     paymentSplitRepository.findByOrderIdWithCreator(existing.getId()));
@@ -107,7 +115,6 @@ public class OrderPlacementService {
         }
 
         BigDecimal takeRate = platformSettingsService.getTakeRatePercent();
-        Instant now = clock.instant();
         Order order = Order.place(buyer, idempotencyKey, request.paymentMethod(), cartItems, takeRate, now);
         order = orderRepository.save(order);
         statusHistoryRepository.save(
@@ -128,13 +135,16 @@ public class OrderPlacementService {
                 .orElseThrow(() -> ApiException.notFound("Pedido não encontrado."));
         Instant now = clock.instant();
         List<PaymentSplit> splits = paymentSplitRepository.findByOrderIdWithCreator(orderId);
-        order.attachCharge(
+        boolean attached = order.attachChargeIfAbsent(
                 charge.gatewayTransactionId(),
                 charge.pixCopyPaste(),
                 charge.pixExpiresAt(),
                 null,
                 now
         );
+        if (!attached) {
+            return;
+        }
         if (charge.creatorSplitReferences() != null) {
             for (PaymentSplit split : splits) {
                 String ref = charge.creatorSplitReferences().get(split.getCreator().getId());
@@ -145,13 +155,16 @@ public class OrderPlacementService {
             paymentSplitRepository.saveAll(splits);
         }
         orderRepository.save(order);
-        cartItemRepository.deleteByUserId(order.getBuyer().getId());
+        List<UUID> orderedProductIds = orderItemRepository.findProductIdsByOrderId(order.getId());
+        if (!orderedProductIds.isEmpty()) {
+            cartItemRepository.deleteByUserIdAndProductIdIn(order.getBuyer().getId(), orderedProductIds);
+        }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void cancelAfterGatewayFailure(UUID orderId) {
         orderRepository.findByIdForUpdate(orderId).ifPresent(order -> {
-            if (order.getStatus() == OrderStatus.PENDING_PAYMENT) {
+            if (order.getStatus() == OrderStatus.PENDING_PAYMENT && !order.hasChargeAttached()) {
                 Instant now = clock.instant();
                 order.cancel(now);
                 orderRepository.save(order);

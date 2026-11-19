@@ -4,6 +4,7 @@ import com.tone.domain.entity.Product;
 import com.tone.domain.entity.Review;
 import com.tone.domain.entity.User;
 import com.tone.domain.enums.OrderStatus;
+import com.tone.domain.enums.UserRole;
 import com.tone.dto.CatalogDtos;
 import com.tone.exception.ApiException;
 import com.tone.repository.OrderItemRepository;
@@ -40,7 +41,16 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public List<CatalogDtos.ReviewDto> listReviews(UUID productId) {
+    public List<CatalogDtos.ReviewDto> listReviews(UUID productId, UUID currentUserId, UserRole currentRole) {
+        Product product = productRepository.findByIdWithCreator(productId)
+                .orElseThrow(() -> ApiException.notFound("Timbre não encontrado."));
+        boolean visible = product.isPurchasable()
+                || currentRole == UserRole.ADMIN
+                || product.isOwnedBy(currentUserId)
+                || (currentUserId != null && orderItemRepository.hasVerifiedPurchase(currentUserId, productId, OrderStatus.PAID));
+        if (!visible) {
+            throw ApiException.notFound("Timbre não encontrado.");
+        }
         return reviewRepository.findByProductIdWithUser(productId).stream()
                 .map(this::toDto)
                 .toList();

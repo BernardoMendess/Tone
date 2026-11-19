@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +21,10 @@ public interface CreatorProfileRepository extends JpaRepository<CreatorProfile, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM CreatorProfile c WHERE c.user.id = :userId")
     Optional<CreatorProfile> findByUserIdForUpdate(UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM CreatorProfile c WHERE c.id IN :ids ORDER BY c.id ASC")
+    List<CreatorProfile> findAllByIdInForUpdateOrderById(Collection<UUID> ids);
 
     @Query("SELECT c FROM CreatorProfile c JOIN FETCH c.user WHERE c.id = :id")
     Optional<CreatorProfile> findByIdWithUser(UUID id);

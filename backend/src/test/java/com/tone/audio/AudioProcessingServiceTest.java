@@ -1,8 +1,10 @@
 package com.tone.audio;
 
+import com.tone.exception.ApiException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AudioProcessingServiceTest {
 
@@ -28,6 +30,21 @@ class AudioProcessingServiceTest {
         assertThat(processedQuiet.bytes().length).isLessThan(quietWav.length);
         assertThat(processedQuiet.protectionMethod()).contains("ULAW_PHASE_GUARD");
         assertThat(processedQuiet.effectiveBitrateKbps()).isEqualTo(96);
+    }
+
+    @Test
+    void rejectsOutOfBoundsWavSampleRateAndCapsDuration() throws Exception {
+        AudioProcessingService service = new AudioProcessingService(-14.0, 2, 22050, false);
+
+        // Crafted low sample rate below 8kHz must be rejected
+        byte[] badRateWav = AudioProcessingService.encodePcm16MonoWav(sineWave(1000, 1.0, 100.0, 0.5), 1000);
+        assertThatThrownBy(() -> service.processDemoAudio(badRateWav, "bad.wav"))
+                .isInstanceOf(ApiException.class);
+
+        // Audio longer than maxPreviewSeconds (2s) is strictly bounded during stream read
+        byte[] longWav = AudioProcessingService.encodePcm16MonoWav(sineWave(22050, 5.0, 440.0, 0.5), 22050);
+        ProcessedAudio capped = service.processDemoAudio(longWav, "long.wav");
+        assertThat(capped.durationSeconds()).isLessThanOrEqualTo(2);
     }
 
     private double[] sineWave(int sr, double seconds, double freq, double amp) {

@@ -4,6 +4,7 @@ import com.tone.domain.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +18,8 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     Optional<CartItem> findByUserIdAndProductId(UUID userId, UUID productId);
 
     void deleteByUserIdAndProductId(UUID userId, UUID productId);
+
+    void deleteByUserIdAndProductIdIn(UUID userId, Collection<UUID> productIds);
 
     void deleteByUserId(UUID userId);
 }

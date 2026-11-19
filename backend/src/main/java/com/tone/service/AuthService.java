@@ -86,7 +86,7 @@ public class AuthService {
     @Transactional(noRollbackFor = ApiException.class)
     public IssuedSession login(AuthDtos.LoginRequest request) {
         Instant now = clock.instant();
-        User user = userRepository.findByEmailIgnoreCase(request.email().trim()).orElse(null);
+        User user = userRepository.findByEmailIgnoreCaseForUpdate(request.email().trim()).orElse(null);
         if (user == null) {
             passwordEncoder.matches(request.password(), DUMMY_BCRYPT_HASH);
             throw ApiException.unauthorized("Credenciais inválidas.");
@@ -114,7 +114,7 @@ public class AuthService {
         }
         Instant now = clock.instant();
         String hash = hashRefreshToken(rawRefreshToken);
-        RefreshToken stored = refreshTokenRepository.findByTokenHashWithUser(hash)
+        RefreshToken stored = refreshTokenRepository.findByTokenHashForUpdate(hash)
                 .orElseThrow(() -> ApiException.unauthorized("Sessão inválida. Faça login novamente."));
 
         User user = stored.getUser();
@@ -142,7 +142,7 @@ public class AuthService {
     public void logout(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) return;
         String hash = hashRefreshToken(rawRefreshToken);
-        refreshTokenRepository.findByTokenHashWithUser(hash).ifPresent(rt -> {
+        refreshTokenRepository.findByTokenHashForUpdate(hash).ifPresent(rt -> {
             rt.revoke(clock.instant());
             refreshTokenRepository.save(rt);
         });

@@ -11,6 +11,7 @@ import com.tone.repository.ProductVersionRepository;
 import com.tone.service.event.PatchVersionPublishedEvent;
 import com.tone.service.mapper.ProductVersionMapper;
 import com.tone.storage.FileStorageService;
+import com.tone.storage.StorageSupport;
 import com.tone.storage.StoredObject;
 import com.tone.upload.UploadPolicy;
 import org.springframework.context.ApplicationEventPublisher;
@@ -69,14 +70,15 @@ public class ProductVersioningService {
         }
         uploadPolicy.validatePatch(patchFile);
 
+        String safePatchFilename = StorageSupport.sanitizeFilename(patchFile.getOriginalFilename());
         StoredObject storedPatch;
         try (InputStream in = patchFile.getInputStream()) {
             storedPatch = fileStorageService.storePrivateFile(
                     "patches",
-                    patchFile.getOriginalFilename() != null ? patchFile.getOriginalFilename() : "patch.bin",
+                    safePatchFilename,
                     in,
                     patchFile.getSize(),
-                    patchFile.getContentType()
+                    "application/octet-stream"
             );
         }
 
@@ -89,7 +91,7 @@ public class ProductVersioningService {
         version.setVersionNumber(trimmedVersion);
         version.setChangelog(effectiveChangelog);
         version.setPatchFileKey(storedPatch.storageKey());
-        version.setOriginalFilename(patchFile.getOriginalFilename() != null ? patchFile.getOriginalFilename() : "patch.bin");
+        version.setOriginalFilename(safePatchFilename);
         version.setFileSizeBytes(storedPatch.sizeBytes());
         version.setChecksumSha256(storedPatch.sha256Checksum());
         version = productVersionRepository.save(version);

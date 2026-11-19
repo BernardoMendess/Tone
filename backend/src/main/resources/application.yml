@@ -5,8 +5,6 @@ server:
 spring:
   application:
     name: tone-api
-  profiles:
-    default: dev
   servlet:
     multipart:
       file-size-threshold: 1MB

@@ -160,7 +160,7 @@ public class Order {
         }
     }
 
-    public void attachCharge(
+    public boolean attachChargeIfAbsent(
             String gatewayTransactionId,
             String pixCopyPaste,
             Instant pixExpiresAt,
@@ -169,6 +169,9 @@ public class Order {
     ) {
         if (this.status != OrderStatus.PENDING_PAYMENT) {
             throw new InvalidStateTransitionException("Order", id, status, OrderStatus.PENDING_PAYMENT);
+        }
+        if (hasChargeAttached()) {
+            return false;
         }
         this.gatewayTransactionId = gatewayTransactionId;
         this.pixCopyPaste = pixCopyPaste;
@@ -182,6 +185,7 @@ public class Order {
                 }
             }
         }
+        return true;
     }
 
     public void markPaid(Instant at) {

@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:h2:file:./storage/tone-dev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:./storage/tone-dev;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE_ENABLED:false}
       path: /h2-console
   flyway:
     enabled: true
@@ -17,11 +17,11 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:dev-only-jwt-secret-change-me-0123456789abcdef0123456789}
-    cookie-secure: false
+    cookie-secure: ${JWT_COOKIE_SECURE:false}
   payment:
     webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-only-webhook-secret-change-me-0123456789abcdef}
-    sandbox-enabled: true
+    sandbox-enabled: ${PAYMENT_SANDBOX_ENABLED:true}
   storage:
     signing-secret: ${STORAGE_SIGNING_SECRET:dev-only-storage-secret-change-me-0123456789abcdef}
   seed:
-    enabled: true
+    enabled: ${APP_SEED_ENABLED:true}

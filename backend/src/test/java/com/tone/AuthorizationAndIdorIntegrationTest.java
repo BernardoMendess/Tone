@@ -124,11 +124,18 @@ class AuthorizationAndIdorIntegrationTest {
                         .header("Authorization", "Bearer " + camilaToken))
                 .andExpect(status().isNoContent());
 
-        // Public detail & demo audio return 404 for anonymous users
+        // Public detail, reviews & demo audio return 404 for anonymous users
         mockMvc.perform(get("/api/products/" + product.getSlug()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews"))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/audio/demo/" + product.getId()))
                 .andExpect(status().isNotFound());
+
+        // Owner creator can still read reviews of their own deactivated product
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews")
+                        .header("Authorization", "Bearer " + camilaToken))
+                .andExpect(status().isOk());
 
         // Re-activate so other tests aren't affected
         mockMvc.perform(patch("/api/creator/products/" + product.getId())

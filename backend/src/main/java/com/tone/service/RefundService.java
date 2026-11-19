@@ -29,6 +29,7 @@ public class RefundService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final PaymentSplitRepository paymentSplitRepository;
+    private final CreatorProfileRepository creatorProfileRepository;
     private final ProductRepository productRepository;
     private final OrderStatusHistoryRepository statusHistoryRepository;
     private final NotificationRepository notificationRepository;
@@ -38,6 +39,7 @@ public class RefundService {
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             PaymentSplitRepository paymentSplitRepository,
+            CreatorProfileRepository creatorProfileRepository,
             ProductRepository productRepository,
             OrderStatusHistoryRepository statusHistoryRepository,
             NotificationRepository notificationRepository,
@@ -46,6 +48,7 @@ public class RefundService {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentSplitRepository = paymentSplitRepository;
+        this.creatorProfileRepository = creatorProfileRepository;
         this.productRepository = productRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.notificationRepository = notificationRepository;
@@ -70,6 +73,17 @@ public class RefundService {
     }
 
     private void applyRefundLocked(Order order, String actor, String reason) {
+        List<PaymentSplit> splits = paymentSplitRepository.findByOrderIdWithCreator(order.getId());
+        List<UUID> creatorIds = splits.stream()
+                .map(s -> s.getCreator().getId())
+                .distinct()
+                .sorted()
+                .toList();
+        if (!creatorIds.isEmpty()) {
+            // Serialize refunds against concurrent PayoutService.requestPayout calls (Order -> CreatorProfile sorted lock order)
+            creatorProfileRepository.findAllByIdInForUpdateOrderById(creatorIds);
+        }
+
         Instant now = clock.instant();
         OrderStatus previous = order.getStatus();
         order.markRefunded(now);
@@ -77,7 +91,6 @@ public class RefundService {
         statusHistoryRepository.save(
                 OrderStatusHistory.of(order, previous, OrderStatus.REFUNDED, actor, reason, now));
 
-        List<PaymentSplit> splits = paymentSplitRepository.findByOrderIdWithCreator(order.getId());
         for (PaymentSplit split : splits) {
             split.markRefunded();
         }
