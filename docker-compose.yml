@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: toneguitar-postgres
+    environment:
+      POSTGRES_DB: toneguitar
+      POSTGRES_USER: toneguitar
+      POSTGRES_PASSWORD: toneguitar_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - toneguitar_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toneguitar -d toneguitar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: toneguitar-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: toneguitar_s3
+      MINIO_ROOT_PASSWORD: toneguitar_s3_secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - toneguitar_minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: toneguitar-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 toneguitar_s3 toneguitar_s3_secret;
+      mc mb --ignore-existing local/toneguitar-private;
+      mc anonymous set none local/toneguitar-private;
+      echo 'Private S3 bucket toneguitar-private ready (public access blocked).';
+      "
+
+volumes:
+  toneguitar_pgdata:
+  toneguitar_minio:

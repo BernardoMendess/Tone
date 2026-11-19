@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:toneguitar_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+app:
+  storage:
+    type: local
+    local-root: ./target/test-vault
+  audio:
+    enable-ffmpeg-if-present: false
+  seed:
+    enabled: true
