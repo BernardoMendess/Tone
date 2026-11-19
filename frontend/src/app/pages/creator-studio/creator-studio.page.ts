@@ -36,7 +36,7 @@ import {
               <strong>Solicitação anterior recusada pela curadoria:</strong> {{ profile()?.rejectionReason }}
             </div>
           }
-          <h2>Torne-se um Criador Curado no ToneGuitar</h2>
+          <h2>Torne-se um Criador Curado no Tone</h2>
           <p class="muted-p">
             Para garantir excelência sonora na plataforma, todos os novos criadores passam por curadoria antes de publicar produtos (RF12).
           </p>

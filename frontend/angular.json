@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "toneguitar": {
+    "tone": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -18,7 +18,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/toneguitar",
+            "outputPath": "dist/tone",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -73,10 +73,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "toneguitar:build:production"
+              "buildTarget": "tone:build:production"
             },
             "development": {
-              "buildTarget": "toneguitar:build:development"
+              "buildTarget": "tone:build:development"
             }
           },
           "defaultConfiguration": "development"

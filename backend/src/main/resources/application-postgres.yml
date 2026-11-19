@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/toneguitar}
-    username: ${DATABASE_USER:toneguitar}
-    password: ${DATABASE_PASSWORD:toneguitar_dev_password}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/tone}
+    username: ${DATABASE_USER:tone}
+    password: ${DATABASE_PASSWORD:tone_dev_password}
     driver-class-name: org.postgresql.Driver
   flyway:
     enabled: true

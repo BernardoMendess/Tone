@@ -3,8 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { AuthResponse, UserInfo } from '../models';
 
-const TOKEN_KEY = 'toneguitar_token';
-const USER_KEY = 'toneguitar_user';
+const TOKEN_KEY = 'tone_token';
+const USER_KEY = 'tone_user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

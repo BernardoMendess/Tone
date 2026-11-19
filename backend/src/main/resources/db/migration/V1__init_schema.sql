@@ -1,4 +1,4 @@
--- ToneGuitar Marketplace Schema (PostgreSQL & H2 PostgreSQL Mode Compatible)
+-- Tone Marketplace Schema (PostgreSQL & H2 PostgreSQL Mode Compatible)
 
 CREATE TABLE users (
     id UUID PRIMARY KEY,

@@ -1,4 +1,4 @@
-# ToneGuitar — Marketplace de Timbres Digitais
+# Tone — Marketplace de Timbres Digitais
 
 Plataforma full-stack de marketplace especializada na comercialização de ativos de áudio digitais (presets/patches, capturas neurais e Impulse Responses) para pedaleiras e processadores de guitarra, construída com **Java + Spring Boot 3.5**, **Angular 19**, **PostgreSQL 17** e **Amazon S3 / MinIO** com acesso privado.
 
@@ -38,10 +38,10 @@ Plataforma full-stack de marketplace especializada na comercialização de ativo
 ## Estrutura do Projeto
 
 ```text
-ToneGuitar/
+Tone/
 ├── docker-compose.yml        # PostgreSQL 17 + MinIO (S3 privado) + inicializador de bucket
 ├── backend/                  # Java 21+ / Spring Boot 3.5.6 / Flyway / JPA / AWS SDK S3
-│   └── src/main/java/com/toneguitar/
+│   └── src/main/java/com/tone/
 │       ├── audio/            # Normalização -14 LUFS, anti-IR ripping e sintetizador de demos
 │       ├── config/           # DataSeeder (catálogo inicial + contas de demonstração)
 │       ├── controller/       # REST APIs (Catalog, Audio, Cart, Checkout, Library, Creator, Admin)
@@ -81,7 +81,7 @@ ToneGuitar/
 
 ### Opção 2 — Stack Completa de Produção Local (PostgreSQL 17 + MinIO S3 Privado)
 
-1. Suba o PostgreSQL e o MinIO (bucket privado `toneguitar-private` com acesso público bloqueado):
+1. Suba o PostgreSQL e o MinIO (bucket privado `tone-private` com acesso público bloqueado):
    ```bash
    docker compose up -d
    ```
@@ -104,10 +104,10 @@ Na tela **Entrar (`/auth`)** existem botões de acesso rápido para testar todos
 
 | Papel | E-mail | Senha | O que testar |
 |---|---|---|---|
-| **Comprador** | `buyer@toneguitar.com` | `Buyer@123` | Biblioteca Digital (com patch atualizado `v1.2.0` + itens de bundle), Presigned Downloads, Favoritos, Avaliações Verificadas, Carrinho e Checkout PIX |
-| **Criador Aprovado** | `lucas@toneguitar.com` | `Creator@123` | Dashboard Financeiro (split 85%/15%), Saque PIX, Upload de Novo Timbre, Versionamento de Patches, Criação de Bundles e Perfil Público |
-| **Criador Pendente** | `pedro@toneguitar.com` | `Creator@123` | Experiência de criador aguardando aprovação na fila de curadoria |
-| **Administrador** | `admin@toneguitar.com` | `Admin@123` | Fila de Curadoria de Criadores (aprovar/recusar Pedro Rocha) e ajuste do Take Rate global do motor de split |
+| **Comprador** | `buyer@tone.com` | `Buyer@123` | Biblioteca Digital (com patch atualizado `v1.2.0` + itens de bundle), Presigned Downloads, Favoritos, Avaliações Verificadas, Carrinho e Checkout PIX |
+| **Criador Aprovado** | `lucas@tone.com` | `Creator@123` | Dashboard Financeiro (split 85%/15%), Saque PIX, Upload de Novo Timbre, Versionamento de Patches, Criação de Bundles e Perfil Público |
+| **Criador Pendente** | `pedro@tone.com` | `Creator@123` | Experiência de criador aguardando aprovação na fila de curadoria |
+| **Administrador** | `admin@tone.com` | `Admin@123` | Fila de Curadoria de Criadores (aprovar/recusar Pedro Rocha) e ajuste do Take Rate global do motor de split |
 
 ---
 

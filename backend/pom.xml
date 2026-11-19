@@ -11,10 +11,10 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.toneguitar</groupId>
-    <artifactId>toneguitar-backend</artifactId>
+    <groupId>com.tone</groupId>
+    <artifactId>tone-backend</artifactId>
     <version>1.0.0</version>
-    <name>ToneGuitar Marketplace API</name>
+    <name>Tone Marketplace API</name>
     <description>Marketplace de Timbres Digitais para Guitarra — Backend Spring Boot</description>
 
     <properties>

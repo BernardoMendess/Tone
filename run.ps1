@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BackendDir = Join-Path $Root "backend"
 $FrontendDir = Join-Path $Root "frontend"
-$JarPath = Join-Path $BackendDir "target\toneguitar-backend-1.0.0.jar"
+$JarPath = Join-Path $BackendDir "target\tone-backend-1.0.0.jar"
 
 # Resolve Java executable (prefer JAVA_HOME to avoid Oracle javapath shim issues)
 $JavaExe = if ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME "bin\java.exe"))) {
@@ -25,7 +25,7 @@ function Find-Maven {
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  ToneGuitar Marketplace - Launcher" -ForegroundColor Cyan
+Write-Host "  Tone Marketplace - Launcher" -ForegroundColor Cyan
 Write-Host "  Perfil ativo: $Profile" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
@@ -91,5 +91,5 @@ finally {
         Write-Host "`nEncerrando backend (PID $($BackendProc.Id))..." -ForegroundColor Yellow
         Stop-Process -Id $BackendProc.Id -Force -ErrorAction SilentlyContinue
     }
-    Write-Host "ToneGuitar encerrado." -ForegroundColor Cyan
+    Write-Host "Tone encerrado." -ForegroundColor Cyan
 }

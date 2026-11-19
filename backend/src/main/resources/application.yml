@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: toneguitar-api
+    name: tone-api
   profiles:
     default: dev
   servlet:
@@ -25,26 +25,26 @@ app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200}
   jwt:
-    secret: ${JWT_SECRET:ToneGuitarMarketplaceSuperSecure256BitJwtSecretKey2026!}
+    secret: ${JWT_SECRET:ToneMarketplaceSuperSecure256BitJwtSecretKey2026!}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   payment:
     default-take-rate-percent: ${DEFAULT_TAKE_RATE_PERCENT:15.00}
-    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:ToneGuitarPixWebhookHmacSecret2026!}
-    pix-merchant-name: TONEGUITAR MARKETPLACE
+    webhook-secret: ${PAYMENT_WEBHOOK_SECRET:TonePixWebhookHmacSecret2026!}
+    pix-merchant-name: TONE MARKETPLACE
     pix-merchant-city: SAO PAULO
-    pix-key: pix@toneguitar.com.br
+    pix-key: pix@tone.com.br
   storage:
     # 'local' (private vault + HMAC presigned URLs) or 's3' (Amazon S3 / MinIO + S3Presigner)
     type: ${STORAGE_TYPE:local}
     local-root: ${STORAGE_LOCAL_ROOT:./storage/private-vault}
     presigned-ttl-seconds: ${PRESIGNED_TTL_SECONDS:300}
-    signing-secret: ${STORAGE_SIGNING_SECRET:ToneGuitarPrivateVaultHmacSigningSecretKey2026!}
+    signing-secret: ${STORAGE_SIGNING_SECRET:TonePrivateVaultHmacSigningSecretKey2026!}
     s3:
       endpoint: ${S3_ENDPOINT:http://localhost:9000}
       region: ${S3_REGION:us-east-1}
-      bucket: ${S3_BUCKET:toneguitar-private}
-      access-key: ${S3_ACCESS_KEY:toneguitar_s3}
-      secret-key: ${S3_SECRET_KEY:toneguitar_s3_secret}
+      bucket: ${S3_BUCKET:tone-private}
+      access-key: ${S3_ACCESS_KEY:tone_s3}
+      secret-key: ${S3_SECRET_KEY:tone_s3_secret}
       path-style-access: ${S3_PATH_STYLE:true}
   audio:
     target-lufs: -14.0

@@ -18,7 +18,7 @@ import { NotificationItem } from '../../core/models';
           <span class="brand-mark" aria-hidden="true">
             <i></i><i></i><i></i><i></i>
           </span>
-          <span class="brand-name">ToneGuitar</span>
+          <span class="brand-name">Tone</span>
           <span class="brand-tag mono">AUDIO MARKET</span>
         </a>
 

@@ -30,23 +30,23 @@ import { ToastService } from '../../core/services/toast.service';
               <input type="password" class="input" [(ngModel)]="password" name="password" required placeholder="••••••••"/>
             </div>
             <button type="submit" class="btn btn-primary full" [disabled]="loading()">
-              {{ loading() ? 'Autenticando...' : 'Entrar no ToneGuitar' }}
+              {{ loading() ? 'Autenticando...' : 'Entrar no Tone' }}
             </button>
           </form>
 
           <div class="demo-box">
             <div class="demo-title mono">ACESSO RÁPIDO (CONTAS DE DEMONSTRAÇÃO)</div>
             <div class="demo-grid">
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('buyer@toneguitar.com', 'Buyer@123')">
+              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('buyer@tone.com', 'Buyer@123')">
                 Comprador (Biblioteca + Favoritos)
               </button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('lucas@toneguitar.com', 'Creator@123')">
+              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('lucas@tone.com', 'Creator@123')">
                 Criador Aprovado (Estúdio + Financeiro)
               </button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('pedro@toneguitar.com', 'Creator@123')">
+              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('pedro@tone.com', 'Creator@123')">
                 Criador Pendente (Em Curadoria)
               </button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('admin@toneguitar.com', 'Admin@123')">
+              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('admin@tone.com', 'Admin@123')">
                 Administrador (Curadoria + Split)
               </button>
             </div>
