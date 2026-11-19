@@ -54,11 +54,16 @@ public class SecurityConfig {
     }
 
     /**
-     * M8: H2 console isolated strictly to the 'dev' profile.
+     * M8: H2 console isolated strictly to the 'dev' profile and only when explicitly enabled.
      */
     @Bean
     @Order(0)
     @Profile("dev")
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            prefix = "spring.h2.console",
+            name = "enabled",
+            havingValue = "true"
+    )
     public SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(PathRequest.toH2Console())
