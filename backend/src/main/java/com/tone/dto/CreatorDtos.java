@@ -2,6 +2,10 @@ package com.tone.dto;
 
 import com.tone.domain.enums.CreatorStatus;
 import com.tone.domain.enums.PayoutStatus;
+import com.tone.domain.enums.PickupType;
+import com.tone.domain.enums.ProductType;
+import com.tone.validation.HttpsUrl;
+import com.tone.validation.PixKey;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -16,11 +20,11 @@ public final class CreatorDtos {
             @NotBlank @Size(min = 2, max = 120) String displayName,
             @NotBlank @Size(min = 10, max = 2000) String bio,
             @NotBlank @Size(max = 255) String mainGear,
-            @Size(max = 500) String portfolioDemoUrl,
-            @Size(max = 500) String youtubeUrl,
-            @Size(max = 500) String instagramUrl,
-            @Size(max = 500) String websiteUrl,
-            @NotBlank @Size(max = 180) String pixKey
+            @Size(max = 500) @HttpsUrl String portfolioDemoUrl,
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"youtube.com", "www.youtube.com", "youtu.be"}) String youtubeUrl,
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"instagram.com", "www.instagram.com"}) String instagramUrl,
+            @Size(max = 500) @HttpsUrl String websiteUrl,
+            @NotBlank @Size(max = 180) @PixKey String pixKey
     ) {}
 
     public record UpdateCreatorProfileRequest(
@@ -28,12 +32,12 @@ public final class CreatorDtos {
             @Pattern(regexp = "^[a-z0-9-]+$", message = "Slug deve conter apenas letras minúsculas, números e hífens.")
             @Size(min = 3, max = 120) String slug,
             @Size(max = 2000) String bio,
-            @Size(max = 500) String avatarUrl,
+            @Size(max = 500) @HttpsUrl String avatarUrl,
             @Size(max = 255) String mainGear,
-            @Size(max = 500) String youtubeUrl,
-            @Size(max = 500) String instagramUrl,
-            @Size(max = 500) String websiteUrl,
-            @NotBlank @Size(max = 180) String pixKey
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"youtube.com", "www.youtube.com", "youtu.be"}) String youtubeUrl,
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"instagram.com", "www.instagram.com"}) String instagramUrl,
+            @Size(max = 500) @HttpsUrl String websiteUrl,
+            @NotBlank @Size(max = 180) @PixKey String pixKey
     ) {}
 
     public record CreatorProfileDto(
@@ -57,13 +61,40 @@ public final class CreatorDtos {
             Instant createdAt
     ) {}
 
+    public record CreateProductForm(
+            @NotBlank @Size(min = 3, max = 180) String title,
+            @NotBlank @Size(min = 10, max = 4000) String description,
+            @NotNull @DecimalMin("1.00") @Digits(integer = 10, fraction = 2) BigDecimal price,
+            @NotNull ProductType productType,
+            @NotBlank @Size(max = 80) String genre,
+            @NotBlank @Size(max = 120) String targetGear,
+            @NotBlank @Size(max = 120) String sourceGear,
+            @NotNull PickupType pickupType,
+            @Size(max = 500) String tags,
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"youtube.com", "www.youtube.com", "youtu.be"}) String videoUrl,
+            @Pattern(regexp = "^\\d+\\.\\d+\\.\\d+$", message = "Versão deve seguir SemVer (ex.: 1.0.0).") String version
+    ) {}
+
+    public record UpdateProductRequest(
+            @Size(min = 3, max = 180) String title,
+            @Size(min = 10, max = 4000) String description,
+            @DecimalMin("1.00") @Digits(integer = 10, fraction = 2) BigDecimal price,
+            @Size(max = 80) String genre,
+            @Size(max = 120) String targetGear,
+            @Size(max = 120) String sourceGear,
+            PickupType pickupType,
+            @Size(max = 500) String tags,
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"youtube.com", "www.youtube.com", "youtu.be"}) String videoUrl,
+            Boolean active
+    ) {}
+
     public record CreateBundleRequest(
             @NotBlank @Size(min = 3, max = 180) String title,
             @NotBlank @Size(min = 10, max = 4000) String description,
-            @NotNull @DecimalMin("5.00") BigDecimal promotionalPrice,
+            @NotNull @DecimalMin("5.00") @Digits(integer = 10, fraction = 2) BigDecimal promotionalPrice,
             @NotEmpty @Size(min = 2, max = 20) List<UUID> includedProductIds,
             @Size(max = 500) String tags,
-            @Size(max = 500) String videoUrl
+            @Size(max = 500) @HttpsUrl(allowedHosts = {"youtube.com", "www.youtube.com", "youtu.be"}) String videoUrl
     ) {}
 
     public record SaleRecordDto(
@@ -95,8 +126,7 @@ public final class CreatorDtos {
     ) {}
 
     public record RequestPayoutRequest(
-            @NotNull @DecimalMin("10.00") BigDecimal amount,
-            @Size(max = 180) String pixKey
+            @NotNull @DecimalMin("10.00") @Digits(integer = 10, fraction = 2) BigDecimal amount
     ) {}
 
     public record CreatorDashboardDto(
@@ -106,6 +136,7 @@ public final class CreatorDtos {
             BigDecimal platformFeeRetained,
             BigDecimal netRevenueTotal,
             BigDecimal totalWithdrawn,
+            BigDecimal heldBalance,
             BigDecimal availableBalance,
             BigDecimal currentTakeRatePercent,
             List<MonthlyRevenuePoint> monthlySeries,

@@ -41,7 +41,6 @@ import { AdminOverview, CreatorProfileDto, formatBRL } from '../../core/models';
         </div>
 
         <div class="admin-grid">
-          <!-- RF12: Creator Curation Queue -->
           <section class="card pad">
             <h2>Fila de Aprovação de Criadores (RF12)</h2>
             @if (ov.pendingQueue.length === 0) {
@@ -81,7 +80,6 @@ import { AdminOverview, CreatorProfileDto, formatBRL } from '../../core/models';
             }
           </section>
 
-          <!-- RF13: Split Engine Take Rate Settings -->
           <aside class="card pad">
             <h2>Motor de Split (RF13)</h2>
             <p class="muted">
@@ -101,7 +99,6 @@ import { AdminOverview, CreatorProfileDto, formatBRL } from '../../core/models';
           </aside>
         </div>
 
-        <!-- All Creators Directory -->
         <h2 class="mt-24">Todos os Criadores ({{ allCreators().length }})</h2>
         <div class="table-wrap">
           <table class="studio-table">
@@ -112,6 +109,7 @@ import { AdminOverview, CreatorProfileDto, formatBRL } from '../../core/models';
                 <th>Equipamento</th>
                 <th>Chave PIX</th>
                 <th>Status</th>
+                <th>Ação</th>
               </tr>
             </thead>
             <tbody>
@@ -125,9 +123,16 @@ import { AdminOverview, CreatorProfileDto, formatBRL } from '../../core/models';
                     <span class="badge"
                           [class.badge-success]="c.status === 'APPROVED'"
                           [class.badge-warning]="c.status === 'PENDING'"
-                          [class.badge-danger]="c.status === 'REJECTED'">
+                          [class.badge-danger]="c.status === 'REJECTED' || c.status === 'SUSPENDED'">
                       {{ c.status }}
                     </span>
+                  </td>
+                  <td>
+                    @if (c.status === 'APPROVED') {
+                      <button class="btn btn-danger btn-sm" (click)="suspend(c)">Suspender</button>
+                    } @else if (c.status === 'SUSPENDED') {
+                      <button class="btn btn-outline btn-sm" (click)="approve(c)">Reativar</button>
+                    }
                   </td>
                 </tr>
               }
@@ -199,7 +204,7 @@ export class AdminPage implements OnInit {
       this.overview.set(ov);
       this.takeRate = ov.currentTakeRatePercent;
     });
-    this.api.getAdminCreators().subscribe(list => this.allCreators.set(list));
+    this.api.getAdminCreators().subscribe(page => this.allCreators.set(page.content));
   }
 
   approve(c: CreatorProfileDto): void {
@@ -229,6 +234,18 @@ export class AdminPage implements OnInit {
         this.load();
       },
       error: err => this.toast.show(err.error?.message || 'Erro ao recusar criador.', 'error')
+    });
+  }
+
+  suspend(c: CreatorProfileDto): void {
+    const reason = window.prompt(`Motivo da suspensão de "${c.displayName}":`);
+    if (!reason || !reason.trim()) return;
+    this.api.suspendCreator(c.id, reason.trim()).subscribe({
+      next: () => {
+        this.toast.show(`Criador "${c.displayName}" suspenso e anúncios pausados.`);
+        this.load();
+      },
+      error: err => this.toast.show(err.error?.message || 'Erro ao suspender criador.', 'error')
     });
   }
 

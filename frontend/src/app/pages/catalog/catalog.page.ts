@@ -1,16 +1,27 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BehaviorSubject, catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { ApiService, CatalogSearchParams } from '../../core/services/api.service';
 import {
   FilterOptions,
   PICKUP_LABELS,
   PRODUCT_TYPE_LABELS,
+  PageResponse,
   PickupType,
   ProductCard,
   ProductType
 } from '../../core/models';
 import { ToneCardComponent } from '../../shared/components/tone-card.component';
+
+const EMPTY_PAGE: PageResponse<ProductCard> = {
+  content: [],
+  page: 0,
+  size: 24,
+  totalElements: 0,
+  totalPages: 0
+};
 
 @Component({
   selector: 'app-catalog-page',
@@ -29,11 +40,12 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
           </p>
         </div>
 
-        <form class="search-bar" (ngSubmit)="loadProducts()">
+        <form class="search-bar" (ngSubmit)="applyFilters(true)">
           <input
             type="search"
             class="input search-input"
             [(ngModel)]="filters.q"
+            (ngModelChange)="applyFilters(true)"
             name="q"
             placeholder="Buscar por amplificador, pedaleira, gênero, tag ou criador..."
           />
@@ -49,7 +61,6 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
     </section>
 
     <div class="container catalog-layout">
-      <!-- Cross-Filter Sidebar (RF01) — collapsible on mobile (RNF06) -->
       <aside class="filter-sidebar card" [class.open]="mobileFiltersOpen()">
         <div class="filter-head">
           <h2>Filtros Cruzados</h2>
@@ -60,7 +71,7 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
 
         <div class="field">
           <label for="f-genre">Gênero Musical</label>
-          <select id="f-genre" class="select" [(ngModel)]="filters.genre" (change)="loadProducts()">
+          <select id="f-genre" class="select" [(ngModel)]="filters.genre" (change)="applyFilters(true)">
             <option value="">Todos os gêneros</option>
             @for (g of filterOptions()?.genres ?? []; track g) {
               <option [value]="g">{{ g }}</option>
@@ -70,7 +81,7 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
 
         <div class="field">
           <label for="f-target">Equipamento de Destino (Pedaleira)</label>
-          <select id="f-target" class="select" [(ngModel)]="filters.targetGear" (change)="loadProducts()">
+          <select id="f-target" class="select" [(ngModel)]="filters.targetGear" (change)="applyFilters(true)">
             <option value="">Todos os equipamentos</option>
             @for (t of filterOptions()?.targetGears ?? []; track t) {
               <option [value]="t">{{ t }}</option>
@@ -80,7 +91,7 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
 
         <div class="field">
           <label for="f-source">Equipamento de Origem (Amp / Cab)</label>
-          <select id="f-source" class="select" [(ngModel)]="filters.sourceGear" (change)="loadProducts()">
+          <select id="f-source" class="select" [(ngModel)]="filters.sourceGear" (change)="applyFilters(true)">
             <option value="">Todos os amplificadores</option>
             @for (s of filterOptions()?.sourceGears ?? []; track s) {
               <option [value]="s">{{ s }}</option>
@@ -90,7 +101,7 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
 
         <div class="field">
           <label for="f-pickup">Tipo de Captação da Guitarra</label>
-          <select id="f-pickup" class="select" [(ngModel)]="filters.pickupType" (change)="loadProducts()">
+          <select id="f-pickup" class="select" [(ngModel)]="filters.pickupType" (change)="applyFilters(true)">
             <option value="">Qualquer captação</option>
             @for (p of pickupTypes; track p) {
               <option [value]="p">{{ pickupLabels[p] }}</option>
@@ -100,7 +111,7 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
 
         <div class="field">
           <label for="f-type">Formato do Ativo</label>
-          <select id="f-type" class="select" [(ngModel)]="filters.productType" (change)="loadProducts()">
+          <select id="f-type" class="select" [(ngModel)]="filters.productType" (change)="applyFilters(true)">
             <option value="">Todos os formatos</option>
             @for (pt of productTypes; track pt) {
               <option [value]="pt">{{ productTypeLabels[pt] }}</option>
@@ -109,16 +120,15 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
         </div>
       </aside>
 
-      <!-- Results Grid -->
       <section class="results-col">
         <div class="results-toolbar">
           <div class="results-count mono">
-            {{ products().length }} {{ products().length === 1 ? 'timbre encontrado' : 'timbres encontrados' }}
+            {{ totalElements() }} {{ totalElements() === 1 ? 'timbre encontrado' : 'timbres encontrados' }}
           </div>
 
           <div class="sort-wrap">
             <label for="sort-sel">Ordenar:</label>
-            <select id="sort-sel" class="select select-sm" [(ngModel)]="filters.sort" (change)="loadProducts()">
+            <select id="sort-sel" class="select select-sm" [(ngModel)]="filters.sort" (change)="applyFilters(true)">
               <option value="popular">Mais vendidos</option>
               <option value="newest">Mais recentes</option>
               <option value="rating">Melhor avaliados</option>
@@ -146,6 +156,18 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
               <app-tone-card [product]="p" [siblingProducts]="products()"></app-tone-card>
             }
           </div>
+
+          @if (totalPages() > 1) {
+            <div class="pager">
+              <button class="btn btn-outline btn-sm" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 0">
+                ← Anterior
+              </button>
+              <span class="mono pager-info">Página {{ currentPage() + 1 }} de {{ totalPages() }}</span>
+              <button class="btn btn-outline btn-sm" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() + 1 >= totalPages()">
+                Próxima →
+              </button>
+            </div>
+          }
         }
       </section>
     </div>
@@ -171,77 +193,78 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
     }
     .hero-copy h1 {
       margin: 0 0 8px;
-      font-size: 24px;
-      line-height: 1.2;
-      letter-spacing: -0.03em;
-      font-weight: 600;
-      @media (min-width: 768px) { font-size: 30px; }
+      font-size: clamp(22px, 3vw, 30px);
+      line-height: 1.18;
+      letter-spacing: -0.025em;
+      max-width: 720px;
     }
     .hero-copy p {
       margin: 0;
-      color: var(--ink-muted);
-      max-width: 680px;
+      color: var(--ink-secondary);
       font-size: 14.5px;
+      max-width: 680px;
     }
     .search-bar {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
-      max-width: 720px;
+      max-width: 760px;
     }
-    .search-input { flex: 1; min-width: 220px; }
+    .search-input {
+      flex: 1;
+      height: 42px;
+      font-size: 14px;
+    }
     .mobile-filter-btn {
+      display: inline-flex;
       @media (min-width: 960px) { display: none; }
     }
 
     .catalog-layout {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 20px;
+      gap: 22px;
       align-items: start;
       @media (min-width: 960px) {
-        grid-template-columns: 265px 1fr;
-        gap: 24px;
+        grid-template-columns: 260px 1fr;
       }
     }
+
     .filter-sidebar {
-      display: none;
       padding: 18px;
+      display: none;
+      &.open { display: block; }
       @media (min-width: 960px) {
         display: block;
         position: sticky;
         top: 76px;
       }
-      &.open { display: block; }
     }
     .filter-head {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
+      justify-content: space-between;
+      margin-bottom: 14px;
       h2 { margin: 0; font-size: 14px; font-weight: 600; }
     }
     .clear-btn {
-      background: none;
+      background: transparent;
       border: none;
       color: var(--accent);
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
+      &:hover { text-decoration: underline; }
     }
 
     .results-toolbar {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .results-count {
-      font-size: 12.5px;
+      font-size: 12px;
       color: var(--ink-muted);
     }
     .sort-wrap {
@@ -253,30 +276,45 @@ import { ToneCardComponent } from '../../shared/components/tone-card.component';
     .select-sm {
       width: auto;
       padding: 6px 10px;
-      font-size: 13px;
+      font-size: 12.5px;
     }
 
     .tone-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 16px;
-      @media (min-width: 640px) {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      @media (min-width: 1160px) {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+      @media (min-width: 640px) { grid-template-columns: repeat(2, 1fr); }
+      @media (min-width: 1180px) { grid-template-columns: repeat(3, 1fr); }
     }
+
     .skeleton {
-      height: 270px;
-      background: linear-gradient(90deg, #f4f4f6 25%, #ececef 50%, #f4f4f6 75%);
+      height: 310px;
+      background: linear-gradient(90deg, var(--bg-subtle) 25%, #ececee 50%, var(--bg-subtle) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite linear;
     }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .pager {
+      margin-top: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .pager-info { font-size: 12px; color: var(--ink-muted); }
   `]
 })
 export class CatalogPage implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly products = signal<ProductCard[]>([]);
+  readonly totalElements = signal(0);
+  readonly currentPage = signal(0);
+  readonly totalPages = signal(0);
   readonly filterOptions = signal<FilterOptions | null>(null);
   readonly loading = signal(true);
   readonly mobileFiltersOpen = signal(false);
@@ -293,12 +331,29 @@ export class CatalogPage implements OnInit {
     sourceGear: '',
     pickupType: '',
     productType: '',
-    sort: 'popular'
+    sort: 'popular',
+    page: 0,
+    size: 24
   };
+
+  private readonly filters$ = new BehaviorSubject<CatalogSearchParams>({ ...this.filters });
 
   ngOnInit(): void {
     this.api.getFilterOptions().subscribe(opts => this.filterOptions.set(opts));
-    this.loadProducts();
+
+    this.filters$.pipe(
+      debounceTime(250),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      tap(() => this.loading.set(true)),
+      switchMap(f => this.api.searchProducts(f).pipe(catchError(() => of(EMPTY_PAGE)))),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(page => {
+      this.products.set(page.content);
+      this.totalElements.set(page.totalElements);
+      this.currentPage.set(page.page);
+      this.totalPages.set(page.totalPages);
+      this.loading.set(false);
+    });
   }
 
   activeFilterCount(): number {
@@ -306,15 +361,17 @@ export class CatalogPage implements OnInit {
       .filter(Boolean).length;
   }
 
-  loadProducts(): void {
-    this.loading.set(true);
-    this.api.searchProducts(this.filters).subscribe({
-      next: list => {
-        this.products.set(list);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
-    });
+  applyFilters(resetPage = false): void {
+    if (resetPage) {
+      this.filters.page = 0;
+    }
+    this.filters$.next({ ...this.filters });
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.filters.page = page;
+    this.filters$.next({ ...this.filters });
   }
 
   clearFilters(): void {
@@ -325,8 +382,10 @@ export class CatalogPage implements OnInit {
       sourceGear: '',
       pickupType: '',
       productType: '',
-      sort: 'popular'
+      sort: 'popular',
+      page: 0,
+      size: 24
     };
-    this.loadProducts();
+    this.applyFilters(true);
   }
 }

@@ -1,7 +1,9 @@
 package com.tone.domain.entity;
 
 import com.tone.domain.enums.CreatorStatus;
+import com.tone.exception.InvalidStateTransitionException;
 import jakarta.persistence.*;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -11,6 +13,9 @@ public class CreatorProfile {
 
     @Id
     private UUID id;
+
+    @Version
+    private Long version;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
@@ -80,8 +85,51 @@ public class CreatorProfile {
         updatedAt = Instant.now();
     }
 
+    public void approve(User admin, Instant now) {
+        if (!status.canTransitionTo(CreatorStatus.APPROVED)) {
+            throw new InvalidStateTransitionException("CreatorProfile", id, status, CreatorStatus.APPROVED);
+        }
+        this.status = CreatorStatus.APPROVED;
+        this.rejectionReason = null;
+        this.reviewedBy = admin;
+        this.reviewedAt = now;
+        this.updatedAt = now;
+    }
+
+    public void reject(User admin, String reason, Instant now) {
+        if (!status.canTransitionTo(CreatorStatus.REJECTED)) {
+            throw new InvalidStateTransitionException("CreatorProfile", id, status, CreatorStatus.REJECTED);
+        }
+        this.status = CreatorStatus.REJECTED;
+        this.rejectionReason = reason;
+        this.reviewedBy = admin;
+        this.reviewedAt = now;
+        this.updatedAt = now;
+    }
+
+    public void suspend(User admin, String reason, Instant now) {
+        if (!status.canTransitionTo(CreatorStatus.SUSPENDED)) {
+            throw new InvalidStateTransitionException("CreatorProfile", id, status, CreatorStatus.SUSPENDED);
+        }
+        this.status = CreatorStatus.SUSPENDED;
+        this.rejectionReason = reason;
+        this.reviewedBy = admin;
+        this.reviewedAt = now;
+        this.updatedAt = now;
+    }
+
+    public void resubmit(Instant now) {
+        if (!status.canTransitionTo(CreatorStatus.PENDING)) {
+            throw new InvalidStateTransitionException("CreatorProfile", id, status, CreatorStatus.PENDING);
+        }
+        this.status = CreatorStatus.PENDING;
+        this.rejectionReason = null;
+        this.updatedAt = now;
+    }
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+    public Long getVersion() { return version; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public String getDisplayName() { return displayName; }

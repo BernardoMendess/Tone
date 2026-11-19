@@ -17,10 +17,6 @@ public interface PaymentGateway {
             List<SplitInstruction> splitInstructions
     );
 
-    String signWebhookPayload(String gatewayTransactionId, String eventType);
-
-    boolean verifyWebhookSignature(String gatewayTransactionId, String eventType, String providedSignature);
-
     record SplitInstruction(
             UUID creatorId,
             String creatorPixKey,

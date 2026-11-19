@@ -13,13 +13,11 @@ import com.tone.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * RF05 - Sistema de Avaliações: apenas usuários com compra verificada podem avaliar (1 a 5 estrelas + comentário).
+ * RF05 + A2 (recalculo atômico de média) + M6 (bloqueio de autoavaliação).
  */
 @Service
 public class ReviewService {
@@ -50,8 +48,12 @@ public class ReviewService {
 
     @Transactional
     public CatalogDtos.ReviewDto submitReview(UUID userId, UUID productId, CatalogDtos.CreateReviewRequest request) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithCreator(productId)
                 .orElseThrow(() -> ApiException.notFound("Timbre não encontrado."));
+
+        if (product.isOwnedBy(userId)) {
+            throw ApiException.forbidden("O criador não pode avaliar o próprio timbre.");
+        }
 
         if (!orderItemRepository.hasVerifiedPurchase(userId, productId, OrderStatus.PAID)) {
             throw ApiException.forbidden("Apenas compradores com compra verificada deste timbre podem publicar uma avaliação.");
@@ -71,15 +73,10 @@ public class ReviewService {
 
         review.setRating(request.rating());
         review.setComment(request.comment() != null ? request.comment().trim() : "");
-        review = reviewRepository.save(review);
+        review = reviewRepository.saveAndFlush(review);
 
-        Double avg = reviewRepository.calculateAverageRating(productId);
-        int count = reviewRepository.countByProductId(productId);
-        product.setAverageRating(avg != null
-                ? BigDecimal.valueOf(avg).setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-        product.setReviewCount(count);
-        productRepository.save(product);
+        // A2: Atomic DB-side rating recalculation (prevents lost updates under concurrent reviews)
+        productRepository.recalculateRating(productId);
 
         return toDto(review);
     }

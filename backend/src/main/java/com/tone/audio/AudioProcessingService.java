@@ -1,5 +1,7 @@
 package com.tone.audio;
 
+import com.tone.exception.ApiException;
+import com.tone.upload.UploadPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,20 +15,19 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * RNF03 (Normalização de Áudio) + RNF04 (Proteção contra Ripping de IRs):
- * - Normaliza o áudio de demonstração para loudness padronizado (-14.0 LUFS / dBFS RMS)
- *   com limiter de pico em -1.0 dBTP para evitar saltos bruscos de volume entre demos.
- * - Aplica compressão lossy (96 kbps via FFmpeg quando disponível, ou companding μ-law +
- *   dispersão de fase all-pass + limitação de banda 22.05 kHz em Java puro) e corte de preview
- *   para inibir extração/deconvolução não autorizada de Impulse Responses (IRs).
+ * RNF03 (Normalização de Áudio -14 LUFS) + RNF04 (Proteção contra Ripping de IRs) + A3 (Hardening FFmpeg).
+ * Remove pass-through inseguro e restringe demuxer/protocolo no FFmpeg para prevenir SSRF/LFI e deadlock de pipe.
  */
 @Service
 public class AudioProcessingService {
 
     private static final Logger log = LoggerFactory.getLogger(AudioProcessingService.class);
+    private static final Set<String> ALLOWED_EXTS = Set.of("wav", "mp3", "flac", "ogg");
 
     private final double targetLufs;
     private final int maxPreviewSeconds;
@@ -47,35 +48,34 @@ public class AudioProcessingService {
 
     public ProcessedAudio processDemoAudio(byte[] rawBytes, String originalFilename) {
         if (rawBytes == null || rawBytes.length == 0) {
-            throw new IllegalArgumentException("Arquivo de áudio de demonstração está vazio.");
+            throw ApiException.badRequest("Arquivo de áudio de demonstração está vazio.");
+        }
+        String ext = UploadPolicy.extractSafeExtension(originalFilename);
+        if (!ALLOWED_EXTS.contains(ext)) {
+            throw ApiException.badRequest("Formato de áudio não suportado. Utilize WAV, MP3, FLAC ou OGG.");
         }
 
-        // 1) Try FFmpeg pipeline (loudnorm + 96kbps MP3 lossy transcoding) when installed
+        // 1) Hardened FFmpeg pipeline (loudnorm + 96kbps MP3 lossy transcoding) when installed
         if (enableFfmpeg) {
-            ProcessedAudio ffmpegResult = tryFfmpegNormalizeAndCompress(rawBytes, originalFilename);
+            ProcessedAudio ffmpegResult = tryFfmpegNormalizeAndCompress(rawBytes, ext);
             if (ffmpegResult != null) {
                 return ffmpegResult;
             }
         }
 
         // 2) Pure-Java DSP pipeline for WAV/PCM inputs (normalization + anti-IR-ripping)
-        try {
-            return processWavInPureJava(rawBytes);
-        } catch (Exception ex) {
-            log.debug("Fallback pass-through para formato não-WAV sem FFmpeg ({}): {}", originalFilename, ex.getMessage());
-            String ext = guessExtension(originalFilename);
-            String contentType = contentTypeForExtension(ext);
-            int estimatedDuration = Math.max(4, Math.min(maxPreviewSeconds, rawBytes.length / 16000));
-            return new ProcessedAudio(
-                    rawBytes,
-                    contentType,
-                    ext,
-                    estimatedDuration,
-                    BigDecimal.valueOf(targetLufs).setScale(2, RoundingMode.HALF_UP),
-                    96,
-                    "STREAM_PROTECTED_CLIENT_NORMALIZED"
-            );
+        if ("wav".equals(ext)) {
+            try {
+                return processWavInPureJava(rawBytes);
+            } catch (Exception ex) {
+                log.warn("Falha ao processar WAV em Java puro ({}): {}", originalFilename, ex.getMessage());
+                throw ApiException.badRequest("Arquivo WAV inválido ou corrompido.");
+            }
         }
+
+        // No raw pass-through: RNF03/RNF04 require normalized & protected demos
+        throw ApiException.badRequest(
+                "Não foi possível normalizar este formato de áudio no momento. Envie um arquivo WAV PCM válido.");
     }
 
     public ProcessedAudio processWavInPureJava(byte[] wavBytes) throws UnsupportedAudioFileException, IOException {
@@ -96,7 +96,6 @@ public class AudioProcessingService {
                 int channels = pcmFormat.getChannels();
                 float srcRate = pcmFormat.getSampleRate();
 
-                // Decode 16-bit little-endian PCM and downmix to mono float [-1, 1]
                 int frameCount = pcmBytes.length / (2 * channels);
                 double[] mono = new double[frameCount];
                 ByteBuffer bb = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN);
@@ -108,7 +107,6 @@ public class AudioProcessingService {
                     mono[i] = sum / channels;
                 }
 
-                // Trim to maxPreviewSeconds (anti-ripping preview cap)
                 int maxSrcFrames = (int) Math.min(mono.length, (long) srcRate * maxPreviewSeconds);
                 if (maxSrcFrames < mono.length) {
                     double[] trimmed = new double[maxSrcFrames];
@@ -116,17 +114,9 @@ public class AudioProcessingService {
                     mono = trimmed;
                 }
 
-                // Resample to targetSampleRate (22050 Hz bandwidth limit inhibits high-res IR extraction)
                 double[] resampled = resampleLinear(mono, srcRate, targetSampleRate);
-
-                // RNF04: Apply gentle 1st-order all-pass phase dispersion + μ-law companding round-trip
-                // Preserves natural guitar listening tone while disrupting impulse phase coherence for IR deconvolution
                 applyAntiIrRippingProtection(resampled);
-
-                // RNF03: Measure integrated RMS & normalize to targetLufs (-14.0 dBFS RMS) with soft-clipper ceiling
                 double measuredLufs = normalizeLoudness(resampled, targetLufs);
-
-                // Apply 40ms fade-in/fade-out for clean seamless playback
                 applyFades(resampled, (int) (targetSampleRate * 0.04));
 
                 byte[] outWav = encodePcm16MonoWav(resampled, targetSampleRate);
@@ -145,16 +135,13 @@ public class AudioProcessingService {
         }
     }
 
-    /**
-     * RNF03: Normalizes float PCM buffer to target RMS loudness (dBFS/LUFS) with -1.0 dBTP soft ceiling.
-     */
     public double normalizeLoudness(double[] samples, double targetDb) {
         if (samples.length == 0) return targetDb;
 
         double sumSq = 0.0;
         int activeCount = 0;
         for (double s : samples) {
-            if (Math.abs(s) > 0.001) { // gated loudness approximation
+            if (Math.abs(s) > 0.001) {
                 sumSq += s * s;
                 activeCount++;
             }
@@ -172,10 +159,10 @@ public class AudioProcessingService {
 
         for (int i = 0; i < samples.length; i++) {
             double boosted = samples[i] * linearGain;
-            // Soft ceiling limiter (tanh knee above 0.78)
             double limited;
             if (Math.abs(boosted) > 0.78) {
-                limited = Math.signum(boosted) * (0.78 + (ceiling - 0.78) * Math.tanh((Math.abs(boosted) - 0.78) / (ceiling - 0.78)));
+                limited = Math.signum(boosted)
+                        * (0.78 + (ceiling - 0.78) * Math.tanh((Math.abs(boosted) - 0.78) / (ceiling - 0.78)));
             } else {
                 limited = boosted;
             }
@@ -191,9 +178,6 @@ public class AudioProcessingService {
         return 20.0 * Math.log10(Math.max(postRms, 1e-9));
     }
 
-    /**
-     * RNF04: Applies 1st-order all-pass phase dispersion + 8-bit μ-law companding simulation.
-     */
     private void applyAntiIrRippingProtection(double[] samples) {
         double a = 0.62;
         double prevIn = 0.0;
@@ -203,18 +187,15 @@ public class AudioProcessingService {
 
         for (int i = 0; i < samples.length; i++) {
             double x = samples[i];
-            // All-pass filter alters phase spectrum without coloring amplitude response
             double y = -a * x + prevIn + a * prevOut;
             prevIn = x;
             prevOut = y;
 
-            // μ-law companding quantization (lossy perceptual compression)
             double clamped = Math.max(-1.0, Math.min(1.0, y));
             double companded = Math.signum(clamped) * Math.log1p(mu * Math.abs(clamped)) / log1pMu;
             double quantized = Math.round(companded * 127.0) / 127.0;
             double expanded = Math.signum(quantized) * (Math.pow(1.0 + mu, Math.abs(quantized)) - 1.0) / mu;
 
-            // Blend 85% protected signal + 15% clean to preserve warmth while blocking exact IR extraction
             samples[i] = 0.85 * expanded + 0.15 * y;
         }
     }
@@ -255,13 +236,13 @@ public class AudioProcessingService {
         header.putInt(36 + dataSize);
         header.put("WAVE".getBytes());
         header.put("fmt ".getBytes());
-        header.putInt(16);               // PCM chunk size
-        header.putShort((short) 1);      // AudioFormat = PCM
-        header.putShort((short) 1);      // Mono
-        header.putInt(sampleRate);       // SampleRate
-        header.putInt(sampleRate * 2);   // ByteRate
-        header.putShort((short) 2);      // BlockAlign
-        header.putShort((short) 16);     // BitsPerSample
+        header.putInt(16);
+        header.putShort((short) 1);
+        header.putShort((short) 1);
+        header.putInt(sampleRate);
+        header.putInt(sampleRate * 2);
+        header.putShort((short) 2);
+        header.putShort((short) 16);
         header.put("data".getBytes());
         header.putInt(dataSize);
         baos.write(header.array());
@@ -275,27 +256,30 @@ public class AudioProcessingService {
         return baos.toByteArray();
     }
 
-    private ProcessedAudio tryFfmpegNormalizeAndCompress(byte[] rawBytes, String originalFilename) {
+    private ProcessedAudio tryFfmpegNormalizeAndCompress(byte[] rawBytes, String validatedExt) {
         Path tempIn = null;
         Path tempOut = null;
         try {
-            String ext = guessExtension(originalFilename);
-            tempIn = Files.createTempFile("tg-in-", "." + ext);
-            tempOut = Files.createTempFile("tg-out-", ".mp3");
+            tempIn = Files.createTempFile("tone-in-", "." + validatedExt);
+            tempOut = Files.createTempFile("tone-out-", ".mp3");
             Files.write(tempIn, rawBytes);
 
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffmpeg", "-y", "-i", tempIn.toString(),
+                    "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+                    "-protocol_whitelist", "file",
+                    "-f", demuxerFor(validatedExt),
+                    "-i", tempIn.toString(),
                     "-t", String.valueOf(maxPreviewSeconds),
-                    "-af", String.format("loudnorm=I=%.1f:TP=-1.5:LRA=11", targetLufs),
+                    "-af", String.format(Locale.ROOT, "loudnorm=I=%.1f:TP=-1.5:LRA=11", targetLufs),
                     "-ac", "1",
                     "-ar", "32000",
                     "-b:a", "96k",
-                    tempOut.toString()
+                    "-y", tempOut.toString()
             );
             pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             Process process = pb.start();
-            boolean finished = process.waitFor(20, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
             if (!finished || process.exitValue() != 0) {
                 process.destroyForcibly();
                 return null;
@@ -312,7 +296,11 @@ public class AudioProcessingService {
                     96,
                     "FFMPEG_LOUDNORM_14LUFS_MP3_96K"
             );
-        } catch (Exception ignored) {
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (Exception ex) {
+            log.debug("FFmpeg indisponível ou falhou: {}", ex.getMessage());
             return null;
         } finally {
             try { if (tempIn != null) Files.deleteIfExists(tempIn); } catch (IOException ignored) {}
@@ -320,20 +308,13 @@ public class AudioProcessingService {
         }
     }
 
-    private static String guessExtension(String filename) {
-        if (filename != null && filename.contains(".")) {
-            return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
-        }
-        return "wav";
-    }
-
-    private static String contentTypeForExtension(String ext) {
+    private static String demuxerFor(String ext) {
         return switch (ext) {
-            case "mp3" -> "audio/mpeg";
-            case "ogg" -> "audio/ogg";
-            case "webm" -> "audio/webm";
-            case "m4a" -> "audio/mp4";
-            default -> "audio/wav";
+            case "wav" -> "wav";
+            case "mp3" -> "mp3";
+            case "flac" -> "flac";
+            case "ogg" -> "ogg";
+            default -> throw new IllegalArgumentException("Extensão de áudio inválida: " + ext);
         };
     }
 }

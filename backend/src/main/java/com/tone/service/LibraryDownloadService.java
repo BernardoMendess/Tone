@@ -7,6 +7,7 @@ import com.tone.dto.CatalogDtos;
 import com.tone.dto.OrderDtos;
 import com.tone.exception.ApiException;
 import com.tone.repository.*;
+import com.tone.service.mapper.ProductVersionMapper;
 import com.tone.storage.FileStorageService;
 import com.tone.storage.PresignedDownload;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,11 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * RF04 (Biblioteca Digital vitalícia) + RF09 (acesso a versões atualizadas) +
- * RNF02 (geração de Presigned URLs temporárias após verificação de compra).
+ * RF04 + RF09 + RNF02 + A4 (batch loading of bundles and versions — zero N+1).
  */
 @Service
 public class LibraryDownloadService {
@@ -46,31 +48,60 @@ public class LibraryDownloadService {
         this.presignedTtlSeconds = presignedTtlSeconds;
     }
 
+    private record EntrySeed(Product product, String purchasedVersion, String viaBundleTitle, Instant purchasedAt) {}
+
     @Transactional(readOnly = true)
     public List<OrderDtos.LibraryItemDto> getDigitalLibrary(UUID userId) {
         List<OrderItem> purchasedItems = orderItemRepository.findPurchasedItemsByBuyer(userId, OrderStatus.PAID);
-        Map<UUID, OrderDtos.LibraryItemDto> libraryByProductId = new LinkedHashMap<>();
+        if (purchasedItems.isEmpty()) {
+            return List.of();
+        }
 
+        // Batch-load all bundle items in a single query
+        List<UUID> bundleIds = purchasedItems.stream()
+                .map(OrderItem::getProduct)
+                .filter(p -> p.getProductType() == ProductType.BUNDLE)
+                .map(Product::getId)
+                .distinct()
+                .toList();
+
+        Map<UUID, List<BundleItem>> bundleItemsByBundle = bundleIds.isEmpty()
+                ? Map.of()
+                : bundleItemRepository.findByBundleIdInWithProducts(bundleIds).stream()
+                        .collect(Collectors.groupingBy(bi -> bi.getBundle().getId()));
+
+        Map<UUID, EntrySeed> seedsByProductId = new LinkedHashMap<>();
         for (OrderItem oi : purchasedItems) {
             Product product = oi.getProduct();
             if (product.getProductType() == ProductType.BUNDLE) {
-                // RF08: Bundles unlock all included patches individually in the Digital Library
-                List<BundleItem> bundleItems = bundleItemRepository.findByBundleIdWithProducts(product.getId());
-                for (BundleItem bi : bundleItems) {
+                for (BundleItem bi : bundleItemsByBundle.getOrDefault(product.getId(), List.of())) {
                     Product included = bi.getIncludedProduct();
-                    libraryByProductId.putIfAbsent(
+                    seedsByProductId.putIfAbsent(
                             included.getId(),
-                            buildLibraryEntry(included, oi.getPurchasedVersion(), product.getTitle(), oi.getOrder().getPaidAt())
+                            new EntrySeed(included, oi.getPurchasedVersion(), product.getTitle(), oi.getOrder().getPaidAt())
                     );
                 }
             } else {
-                libraryByProductId.putIfAbsent(
+                seedsByProductId.putIfAbsent(
                         product.getId(),
-                        buildLibraryEntry(product, oi.getPurchasedVersion(), null, oi.getOrder().getPaidAt())
+                        new EntrySeed(product, oi.getPurchasedVersion(), null, oi.getOrder().getPaidAt())
                 );
             }
         }
-        return new ArrayList<>(libraryByProductId.values());
+
+        if (seedsByProductId.isEmpty()) {
+            return List.of();
+        }
+
+        // Batch-load all product versions in a single query
+        Map<UUID, List<ProductVersion>> versionsByProduct = versionRepository
+                .findByProductIdInOrderByCreatedAtDesc(seedsByProductId.keySet())
+                .stream()
+                .collect(Collectors.groupingBy(v -> v.getProduct().getId()));
+
+        return seedsByProductId.values().stream()
+                .map(seed -> buildLibraryEntry(seed, versionsByProduct.getOrDefault(seed.product().getId(), List.of())))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -78,8 +109,7 @@ public class LibraryDownloadService {
         Product product = productRepository.findByIdWithCreator(productId)
                 .orElseThrow(() -> ApiException.notFound("Timbre não encontrado."));
 
-        // Allow verified buyers OR the product's own creator to generate a presigned download
-        boolean isOwnerCreator = product.getCreator().getUser().getId().equals(userId);
+        boolean isOwnerCreator = product.isOwnedBy(userId);
         boolean isVerifiedBuyer = orderItemRepository.hasVerifiedPurchase(userId, productId, OrderStatus.PAID);
 
         if (!isVerifiedBuyer && !isOwnerCreator) {
@@ -96,7 +126,8 @@ public class LibraryDownloadService {
                 version.getPatchFileKey(),
                 version.getOriginalFilename(),
                 userId,
-                Duration.ofSeconds(presignedTtlSeconds)
+                Duration.ofSeconds(presignedTtlSeconds),
+                false
         );
 
         return new OrderDtos.PresignedDownloadDto(
@@ -108,27 +139,15 @@ public class LibraryDownloadService {
         );
     }
 
-    private OrderDtos.LibraryItemDto buildLibraryEntry(
-            Product product,
-            String purchasedVersion,
-            String unlockedViaBundleTitle,
-            java.time.Instant purchasedAt
-    ) {
-        List<ProductVersion> versions = versionRepository.findByProductIdOrderByCreatedAtDesc(product.getId());
+    private OrderDtos.LibraryItemDto buildLibraryEntry(EntrySeed seed, List<ProductVersion> versions) {
+        Product product = seed.product();
         List<CatalogDtos.ProductVersionDto> versionDtos = versions.stream()
-                .map(v -> new CatalogDtos.ProductVersionDto(
-                        v.getId(),
-                        v.getVersionNumber(),
-                        v.getChangelog(),
-                        v.getOriginalFilename(),
-                        v.getFileSizeBytes(),
-                        v.getCreatedAt()
-                ))
+                .map(ProductVersionMapper::toDto)
                 .toList();
 
         String latestVersion = product.getCurrentVersion();
         String latestChangelog = versions.isEmpty() ? null : versions.getFirst().getChangelog();
-        boolean hasUpdate = purchasedVersion != null && !purchasedVersion.equals(latestVersion);
+        boolean hasUpdate = seed.purchasedVersion() != null && !seed.purchasedVersion().equals(latestVersion);
 
         return new OrderDtos.LibraryItemDto(
                 product.getId(),
@@ -140,12 +159,12 @@ public class LibraryDownloadService {
                 product.getCreator().getDisplayName(),
                 product.getCreator().getSlug(),
                 product.getDemoAudioKey() != null ? "/api/audio/demo/" + product.getId() : null,
-                purchasedVersion,
+                seed.purchasedVersion(),
                 latestVersion,
                 hasUpdate,
                 latestChangelog,
-                unlockedViaBundleTitle,
-                purchasedAt,
+                seed.viaBundleTitle(),
+                seed.purchasedAt(),
                 versionDtos
         );
     }

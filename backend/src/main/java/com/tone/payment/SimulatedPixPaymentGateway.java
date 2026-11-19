@@ -4,38 +4,36 @@ import com.tone.domain.enums.PaymentMethod;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
 /**
  * RF03 (PIX prioritário) + RF13 (Motor de Split de Pagamento):
- * Gera payload EMVCo BR Code (PIX Copia e Cola com CRC16-CCITT válido), registra as
- * instruções de split por criador + comissão da plataforma e valida assinatura HMAC de webhooks.
+ * Gera payload EMVCo BR Code (PIX Copia e Cola com CRC16-CCITT válido) e registra as
+ * instruções de split por criador + comissão da plataforma.
  */
 @Service
 public class SimulatedPixPaymentGateway implements PaymentGateway {
 
-    private final String webhookSecret;
     private final String pixKey;
     private final String merchantName;
     private final String merchantCity;
+    private final Clock clock;
 
     public SimulatedPixPaymentGateway(
-            @Value("${app.payment.webhook-secret}") String webhookSecret,
             @Value("${app.payment.pix-key:pix@tone.com.br}") String pixKey,
             @Value("${app.payment.pix-merchant-name:TONE MARKETPLACE}") String merchantName,
-            @Value("${app.payment.pix-merchant-city:SAO PAULO}") String merchantCity
+            @Value("${app.payment.pix-merchant-city:SAO PAULO}") String merchantCity,
+            Clock clock
     ) {
-        this.webhookSecret = webhookSecret;
         this.pixKey = pixKey;
         this.merchantName = merchantName;
         this.merchantCity = merchantCity;
+        this.clock = clock;
     }
 
     @Override
@@ -45,8 +43,8 @@ public class SimulatedPixPaymentGateway implements PaymentGateway {
             PaymentMethod method,
             List<SplitInstruction> splitInstructions
     ) {
-        String txId = "TG_GW_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
-        Map<UUID, String> splitRefs = new HashMap<>();
+        String txId = "TN_GW_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+        Map<UUID, String> splitRefs = new LinkedHashMap<>();
         int idx = 1;
         for (SplitInstruction instr : splitInstructions) {
             splitRefs.put(instr.creatorId(), "SPL_" + txId.substring(6, 14) + "_" + idx++);
@@ -56,37 +54,12 @@ public class SimulatedPixPaymentGateway implements PaymentGateway {
         Instant pixExpires = null;
         if (method == PaymentMethod.PIX) {
             pixCode = buildEmvPixBrCode(orderCode, totalAmount);
-            pixExpires = Instant.now().plus(Duration.ofMinutes(30));
+            pixExpires = clock.instant().plus(Duration.ofMinutes(30));
         }
 
         return new GatewayChargeResult(txId, pixCode, pixExpires, splitRefs);
     }
 
-    @Override
-    public String signWebhookPayload(String gatewayTransactionId, String eventType) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] sig = mac.doFinal((gatewayTransactionId + ":" + eventType).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(sig);
-        } catch (Exception e) {
-            throw new IllegalStateException("Falha ao assinar webhook de pagamento", e);
-        }
-    }
-
-    @Override
-    public boolean verifyWebhookSignature(String gatewayTransactionId, String eventType, String providedSignature) {
-        if (providedSignature == null || providedSignature.isBlank()) return false;
-        String expected = signWebhookPayload(gatewayTransactionId, eventType);
-        return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                providedSignature.getBytes(StandardCharsets.UTF_8)
-        );
-    }
-
-    /**
-     * Generates a standards-compliant Brazilian PIX EMVCo BR Code with CRC16-CCITT (0x1021).
-     */
     private String buildEmvPixBrCode(String txRef, BigDecimal amount) {
         String gui = emv("00", "br.gov.bcb.pix");
         String keyField = emv("01", pixKey);
@@ -98,16 +71,16 @@ public class SimulatedPixPaymentGateway implements PaymentGateway {
         if (cleanRef.length() > 25) cleanRef = cleanRef.substring(0, 25);
 
         StringBuilder sb = new StringBuilder();
-        sb.append(emv("00", "01")); // Payload Format Indicator
+        sb.append(emv("00", "01"));
         sb.append(merchantAccountInfo);
-        sb.append(emv("52", "0000")); // Merchant Category Code
-        sb.append(emv("53", "986"));  // Currency BRL (986)
+        sb.append(emv("52", "0000"));
+        sb.append(emv("53", "986"));
         sb.append(emv("54", String.format(Locale.US, "%.2f", amount)));
         sb.append(emv("58", "BR"));
         sb.append(emv("59", cleanName));
         sb.append(emv("60", cleanCity));
         sb.append(emv("62", emv("05", cleanRef)));
-        sb.append("6304"); // CRC16 header
+        sb.append("6304");
 
         String crc = crc16Ccitt(sb.toString());
         return sb.append(crc).toString();

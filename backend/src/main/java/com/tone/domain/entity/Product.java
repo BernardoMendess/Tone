@@ -1,9 +1,12 @@
 package com.tone.domain.entity;
 
+import com.tone.domain.enums.CreatorStatus;
 import com.tone.domain.enums.PickupType;
 import com.tone.domain.enums.ProductType;
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,6 +16,9 @@ public class Product {
 
     @Id
     private UUID id;
+
+    @Version
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", nullable = false)
@@ -101,8 +107,46 @@ public class Product {
         updatedAt = Instant.now();
     }
 
+    public boolean isPurchasable() {
+        return active && creator != null && creator.getStatus() == CreatorStatus.APPROVED;
+    }
+
+    public boolean isOwnedBy(UUID userId) {
+        return userId != null && creator != null && creator.getUser() != null
+                && userId.equals(creator.getUser().getId());
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void updateListing(
+            String title,
+            String description,
+            BigDecimal price,
+            String genre,
+            String targetGear,
+            String sourceGear,
+            PickupType pickupType,
+            String tags,
+            String videoUrl,
+            Boolean active
+    ) {
+        if (title != null && !title.isBlank()) this.title = title.trim();
+        if (description != null && !description.isBlank()) this.description = description.trim();
+        if (price != null) this.price = price.setScale(2, RoundingMode.HALF_UP);
+        if (genre != null && !genre.isBlank()) this.genre = genre.trim();
+        if (targetGear != null && !targetGear.isBlank()) this.targetGear = targetGear.trim();
+        if (sourceGear != null && !sourceGear.isBlank()) this.sourceGear = sourceGear.trim();
+        if (pickupType != null) this.pickupType = pickupType;
+        if (tags != null) this.tags = tags.trim();
+        if (videoUrl != null) this.videoUrl = videoUrl.isBlank() ? null : videoUrl.trim();
+        if (active != null) this.active = active;
+    }
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+    public Long getVersion() { return version; }
     public CreatorProfile getCreator() { return creator; }
     public void setCreator(CreatorProfile creator) { this.creator = creator; }
     public String getTitle() { return title; }

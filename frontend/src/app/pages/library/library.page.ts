@@ -226,7 +226,7 @@ export class LibraryPage implements OnInit {
       },
       error: () => this.loading.set(false)
     });
-    this.api.getMyOrders().subscribe(list => this.orders.set(list));
+    this.api.getMyOrders().subscribe(page => this.orders.set(page.content));
   }
 
   playDemo(item: LibraryItem): void {

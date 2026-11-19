@@ -14,7 +14,7 @@ public final class AuthDtos {
     public record RegisterRequest(
             @NotBlank @Size(min = 2, max = 150) String fullName,
             @NotBlank @Email String email,
-            @NotBlank @Size(min = 6, max = 100) String password
+            @NotBlank @Size(min = 10, max = 100, message = "A senha deve ter entre 10 e 100 caracteres.") String password
     ) {}
 
     public record LoginRequest(

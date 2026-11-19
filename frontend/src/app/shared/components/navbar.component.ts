@@ -327,7 +327,7 @@ export class NavbarComponent implements OnInit {
     const next = !this.notifOpen();
     this.notifOpen.set(next);
     if (next) {
-      this.api.getNotifications().subscribe(list => this.notifications.set(list));
+      this.api.getNotifications().subscribe(page => this.notifications.set(page.content));
     }
   }
 

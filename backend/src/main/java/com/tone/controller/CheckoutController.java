@@ -1,38 +1,59 @@
 package com.tone.controller;
 
 import com.tone.dto.OrderDtos;
+import com.tone.dto.PageResponse;
 import com.tone.security.UserPrincipal;
-import com.tone.service.CheckoutSplitService;
+import com.tone.service.CheckoutOrchestrator;
+import com.tone.service.OrderQueryService;
+import com.tone.service.PaymentWebhookService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
+@Validated
 public class CheckoutController {
 
-    private final CheckoutSplitService checkoutSplitService;
+    private final CheckoutOrchestrator checkoutOrchestrator;
+    private final OrderQueryService orderQueryService;
+    private final PaymentWebhookService paymentWebhookService;
 
-    public CheckoutController(CheckoutSplitService checkoutSplitService) {
-        this.checkoutSplitService = checkoutSplitService;
+    public CheckoutController(
+            CheckoutOrchestrator checkoutOrchestrator,
+            OrderQueryService orderQueryService,
+            PaymentWebhookService paymentWebhookService
+    ) {
+        this.checkoutOrchestrator = checkoutOrchestrator;
+        this.orderQueryService = orderQueryService;
+        this.paymentWebhookService = paymentWebhookService;
     }
 
     @PostMapping("/checkout")
     @ResponseStatus(HttpStatus.CREATED)
     public OrderDtos.OrderDto checkout(
+            @RequestHeader("Idempotency-Key") @NotBlank @Size(min = 8, max = 80) String idempotencyKey,
             @Valid @RequestBody OrderDtos.CheckoutRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return checkoutSplitService.checkout(principal.getId(), request);
+        return checkoutOrchestrator.checkout(principal.getId(), idempotencyKey, request);
     }
 
     @GetMapping("/orders")
-    public List<OrderDtos.OrderDto> myOrders(@AuthenticationPrincipal UserPrincipal principal) {
-        return checkoutSplitService.getUserOrders(principal.getId());
+    public PageResponse<OrderDtos.OrderDto> myOrders(
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return orderQueryService.getUserOrders(principal.getId(), pageable);
     }
 
     @GetMapping("/orders/{orderId}")
@@ -40,19 +61,16 @@ public class CheckoutController {
             @PathVariable UUID orderId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return checkoutSplitService.getOrder(principal.getId(), orderId);
-    }
-
-    @PostMapping("/orders/{orderId}/simulate-pix-payment")
-    public OrderDtos.OrderDto simulatePixPayment(
-            @PathVariable UUID orderId,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
-        return checkoutSplitService.simulatePixConfirmation(principal.getId(), orderId);
+        return orderQueryService.getOrder(principal.getId(), orderId);
     }
 
     @PostMapping("/webhooks/payments")
-    public OrderDtos.OrderDto paymentWebhook(@RequestBody OrderDtos.PaymentWebhookRequest payload) {
-        return checkoutSplitService.handlePaymentWebhook(payload);
+    public ResponseEntity<Void> paymentWebhook(
+            @RequestBody String rawBody,
+            @RequestHeader("X-Webhook-Timestamp") long timestamp,
+            @RequestHeader("X-Webhook-Signature") String signature
+    ) {
+        paymentWebhookService.handleWebhook(rawBody, timestamp, signature);
+        return ResponseEntity.noContent().build();
     }
 }

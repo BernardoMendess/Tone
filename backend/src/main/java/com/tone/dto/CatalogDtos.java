@@ -43,6 +43,7 @@ public final class CatalogDtos {
             int reviewCount,
             int salesCount,
             int includedCount,
+            boolean active,
             CreatorSummary creator,
             Instant createdAt
     ) {}

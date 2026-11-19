@@ -11,8 +11,9 @@ import com.tone.storage.FileStorageService;
 import com.tone.storage.StoredObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,23 +26,21 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Popula o marketplace com contas de demonstração, catálogo de timbres/bundles realistas,
- * arquivos binários privados no vault e demonstrações de guitarra sintetizadas e normalizadas (-14 LUFS).
+ * C3: Demo seeder strictly restricted to 'dev' and 'test' profiles AND explicit app.seed.enabled=true.
  */
 @Component
+@Profile({"dev", "test"})
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
-    private final boolean seedEnabled;
     private final UserRepository userRepository;
     private final CreatorProfileRepository creatorProfileRepository;
     private final ProductRepository productRepository;
     private final ProductVersionRepository versionRepository;
     private final BundleItemRepository bundleItemRepository;
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final PaymentSplitRepository paymentSplitRepository;
     private final ReviewRepository reviewRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final NotificationRepository notificationRepository;
@@ -51,15 +50,12 @@ public class DataSeeder implements CommandLineRunner {
     private final FileStorageService fileStorageService;
 
     public DataSeeder(
-            @Value("${app.seed.enabled:true}") boolean seedEnabled,
             UserRepository userRepository,
             CreatorProfileRepository creatorProfileRepository,
             ProductRepository productRepository,
             ProductVersionRepository versionRepository,
             BundleItemRepository bundleItemRepository,
             OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository,
-            PaymentSplitRepository paymentSplitRepository,
             ReviewRepository reviewRepository,
             WishlistItemRepository wishlistItemRepository,
             NotificationRepository notificationRepository,
@@ -68,15 +64,12 @@ public class DataSeeder implements CommandLineRunner {
             AudioProcessingService audioProcessingService,
             FileStorageService fileStorageService
     ) {
-        this.seedEnabled = seedEnabled;
         this.userRepository = userRepository;
         this.creatorProfileRepository = creatorProfileRepository;
         this.productRepository = productRepository;
         this.versionRepository = versionRepository;
         this.bundleItemRepository = bundleItemRepository;
         this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.paymentSplitRepository = paymentSplitRepository;
         this.reviewRepository = reviewRepository;
         this.wishlistItemRepository = wishlistItemRepository;
         this.notificationRepository = notificationRepository;
@@ -89,7 +82,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        if (!seedEnabled || userRepository.count() > 0) {
+        if (userRepository.count() > 0) {
             return;
         }
         log.info("Inicializando dados de demonstração do Tone Marketplace...");
@@ -129,7 +122,7 @@ public class DataSeeder implements CommandLineRunner {
         pedroPending.setPortfolioDemoUrl("https://youtube.com/watch?v=dQw4w9WgXcQ");
         creatorProfileRepository.save(pedroPending);
 
-        // 3. Individual Tones with Synthesized & Normalized Audio Demos + Private Patch Binaries
+        // 3. Individual Tones
         Product p1 = createTone(lucas, "AC30 Worship Shimmer Pack", "ac30-worship-shimmer-pack",
                 "Preset completo com 8 snapshots (Clean, Edge, Drive 1, Drive 2, Lead, Ambient Swell, Dotted 8th e Shimmer Pad). Calibrado para ir direto em linha (FOH/PA) sem sobras de agudos.",
                 new BigDecimal("49.90"), ProductType.PATCH, "Worship", "Line 6 Helix", "Vox AC30",
@@ -137,9 +130,7 @@ public class DataSeeder implements CommandLineRunner {
                 "https://www.youtube.com/watch?v=5qap5aO4i9A", "1.2.0", ToneProfile.WORSHIP_SHIMMER,
                 "AC30_Worship_Shimmer_v1.2.hlx");
 
-        // Add older version v1.0.0 so RF09 version history is showcased right away!
         addOlderVersion(p1, "1.0.0", "Versão inicial com 6 snapshots para firmware Helix 3.60.", "AC30_Worship_Shimmer_v1.0.hlx");
-        // Update latest version changelog
         versionRepository.findFirstByProductIdOrderByCreatedAtDesc(p1.getId()).ifPresent(v -> {
             v.setChangelog("Compatível com Helix 3.71+, novos snapshots Swell/Pad e ajuste de corte hi-cut em 6.2 kHz.");
             versionRepository.save(v);
@@ -188,7 +179,7 @@ public class DataSeeder implements CommandLineRunner {
                 PickupType.P90, "ambient,swells,jc120,chorus,boss-gt1000",
                 null, "1.0.0", ToneProfile.AMBIENT_SWELLS, "JC120_Lush_Ambient.tsl");
 
-        // 4. Promotional Bundles (RF08)
+        // 4. Promotional Bundles
         Product bundle1 = createBundle(lucas, "Worship Ultimate Rig Bundle", "worship-ultimate-rig-bundle",
                 "Coleção definitiva para guitarristas de Worship e Ambient: reúne os 3 timbres assinatura do Lucas Mendes Tone Lab com 25% de desconto exclusivo no pacote.",
                 new BigDecimal("114.90"), "Worship", "Multi-Plataforma (Helix / QC / GT-1000)",
@@ -201,16 +192,16 @@ public class DataSeeder implements CommandLineRunner {
                 "Dual Rectifier + JCM800 + V30 4x12", PickupType.HUMBUCKER, "bundle,metal,rock,ir,high-gain",
                 List.of(p3, p4, p6));
 
-        // 5. Seed Historical Paid Orders + Settled Splits (so Buyer Library, Reviews & Creator Financial Dashboard start alive!)
-        seedPaidOrder(buyer, "TG-2026-SEED01", Instant.now().minus(18, ChronoUnit.DAYS), List.of(p1, p5), "1.0.0");
-        seedPaidOrder(buyer, "TG-2026-SEED02", Instant.now().minus(5, ChronoUnit.DAYS), List.of(bundle2), "1.0.0");
+        // 5. Seed Historical Paid Orders + Settled Splits
+        seedPaidOrder(buyer, "TN-2026-SEED01", Instant.now().minus(18, ChronoUnit.DAYS), List.of(p1, p5), "1.0.0");
+        seedPaidOrder(buyer, "TN-2026-SEED02", Instant.now().minus(10, ChronoUnit.DAYS), List.of(bundle2), "1.0.0");
 
-        // 6. Seed Verified Reviews (RF05)
+        // 6. Seed Verified Reviews
         seedReview(p1, buyer, 5, "Som absurdo direto na mesa! Os snapshots de drive e shimmer cortam a mix sem precisar mexer em quase nada.");
         seedReview(p5, buyer, 5, "Dinâmica impressionante na minha Stratocaster. Limpa totalmente só baixando o volume da guitarra.");
         seedReview(p3, buyer, 4, "Palm mutes muito definidos em Drop C. Recomendo usar com captador de saída média/alta.");
 
-        // 7. Seed Wishlist for Buyer (RF06)
+        // 7. Seed Wishlist
         WishlistItem wi = new WishlistItem();
         wi.setUser(buyer);
         wi.setProduct(p7);
@@ -221,7 +212,7 @@ public class DataSeeder implements CommandLineRunner {
         wi2.setProduct(bundle1);
         wishlistItemRepository.save(wi2);
 
-        // 8. Seed Patch Update Notification for Buyer (RF09)
+        // 8. Seed Patch Update Notification
         Notification updateNotif = new Notification();
         updateNotif.setUser(buyer);
         updateNotif.setType(NotificationType.PATCH_UPDATE);
@@ -370,65 +361,17 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedPaidOrder(User buyer, String code, Instant paidAt, List<Product> products, String purchasedVersionOverride) {
-        BigDecimal takeRate = new BigDecimal("15.00");
-        BigDecimal totalGross = BigDecimal.ZERO;
-        BigDecimal totalFee = BigDecimal.ZERO;
-        BigDecimal totalNet = BigDecimal.ZERO;
-
-        Order order = new Order();
-        order.setBuyer(buyer);
-        order.setOrderCode(code);
-        order.setStatus(OrderStatus.PAID);
-        order.setPaymentMethod(PaymentMethod.PIX);
-        order.setGatewayTransactionId("TG_GW_SEED_" + code);
-        order.setPaidAt(paidAt);
-        order.setCreatedAt(paidAt);
-
+        Order order = Order.seedPaid(
+                buyer,
+                code,
+                "TN_GW_SEED_" + code,
+                products,
+                purchasedVersionOverride,
+                new BigDecimal("15.00"),
+                paidAt
+        );
+        orderRepository.save(order);
         for (Product p : products) {
-            BigDecimal g = p.getPrice();
-            BigDecimal f = g.multiply(takeRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            BigDecimal n = g.subtract(f);
-            totalGross = totalGross.add(g);
-            totalFee = totalFee.add(f);
-            totalNet = totalNet.add(n);
-        }
-
-        order.setTotalAmount(totalGross);
-        order.setPlatformFeeTotal(totalFee);
-        order.setCreatorNetTotal(totalNet);
-        order = orderRepository.save(order);
-
-        for (Product p : products) {
-            BigDecimal g = p.getPrice();
-            BigDecimal f = g.multiply(takeRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            BigDecimal n = g.subtract(f);
-
-            OrderItem oi = new OrderItem();
-            oi.setOrder(order);
-            oi.setProduct(p);
-            oi.setCreator(p.getCreator());
-            oi.setProductTitleSnapshot(p.getTitle());
-            oi.setPurchasedVersion(purchasedVersionOverride != null && p.getSlug().equals("ac30-worship-shimmer-pack")
-                    ? purchasedVersionOverride : p.getCurrentVersion());
-            oi.setUnitPrice(g);
-            oi.setTakeRatePercent(takeRate);
-            oi.setPlatformFeeAmount(f);
-            oi.setCreatorNetAmount(n);
-            orderItemRepository.save(oi);
-
-            PaymentSplit split = new PaymentSplit();
-            split.setOrder(order);
-            split.setCreator(p.getCreator());
-            split.setGrossAmount(g);
-            split.setPlatformFeeAmount(f);
-            split.setCreatorNetAmount(n);
-            split.setTakeRatePercent(takeRate);
-            split.setStatus(SplitStatus.SETTLED);
-            split.setGatewaySplitReference("SPL_" + code);
-            split.setSettledAt(paidAt);
-            split.setCreatedAt(paidAt);
-            paymentSplitRepository.save(split);
-
             p.setSalesCount(p.getSalesCount() + 1);
             productRepository.save(p);
         }

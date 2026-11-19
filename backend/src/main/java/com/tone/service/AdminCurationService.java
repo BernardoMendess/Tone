@@ -6,22 +6,29 @@ import com.tone.domain.entity.User;
 import com.tone.domain.enums.CreatorStatus;
 import com.tone.domain.enums.NotificationType;
 import com.tone.domain.enums.OrderStatus;
-import com.tone.domain.enums.UserRole;
 import com.tone.dto.AdminDtos;
 import com.tone.dto.CreatorDtos;
+import com.tone.dto.PageResponse;
 import com.tone.exception.ApiException;
 import com.tone.repository.*;
+import com.tone.service.mapper.CreatorProfileMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Módulo Administrativo: RF12 (Aprovação/Curadoria de Criadores) + RF13 (Configuração de Take Rate / Split).
+ * RF12 + RF13 + M3 (transições de estado rigorosas na curadoria e suspensão com desativação de produtos).
  */
 @Service
 public class AdminCurationService {
@@ -32,7 +39,7 @@ public class AdminCurationService {
     private final OrderRepository orderRepository;
     private final NotificationRepository notificationRepository;
     private final PlatformSettingsService platformSettingsService;
-    private final CreatorStudioService creatorStudioService;
+    private final Clock clock;
 
     public AdminCurationService(
             CreatorProfileRepository creatorProfileRepository,
@@ -41,7 +48,7 @@ public class AdminCurationService {
             OrderRepository orderRepository,
             NotificationRepository notificationRepository,
             PlatformSettingsService platformSettingsService,
-            CreatorStudioService creatorStudioService
+            Clock clock
     ) {
         this.creatorProfileRepository = creatorProfileRepository;
         this.userRepository = userRepository;
@@ -49,14 +56,14 @@ public class AdminCurationService {
         this.orderRepository = orderRepository;
         this.notificationRepository = notificationRepository;
         this.platformSettingsService = platformSettingsService;
-        this.creatorStudioService = creatorStudioService;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public AdminDtos.AdminOverviewDto getOverview() {
         List<CreatorDtos.CreatorProfileDto> pending = creatorProfileRepository
                 .findByStatusWithUser(CreatorStatus.PENDING).stream()
-                .map(creatorStudioService::toProfileDto)
+                .map(CreatorProfileMapper::toDto)
                 .toList();
 
         return new AdminDtos.AdminOverviewDto(
@@ -73,30 +80,32 @@ public class AdminCurationService {
     }
 
     @Transactional(readOnly = true)
-    public List<CreatorDtos.CreatorProfileDto> listCreators(CreatorStatus status) {
-        List<CreatorProfile> list = (status != null)
-                ? creatorProfileRepository.findByStatusWithUser(status)
-                : creatorProfileRepository.findAllWithUser();
-        return list.stream().map(creatorStudioService::toProfileDto).toList();
+    public PageResponse<CreatorDtos.CreatorProfileDto> listCreators(CreatorStatus status, Pageable pageable) {
+        Pageable effective = PageRequest.of(
+                pageable.getPageNumber(),
+                Math.min(pageable.getPageSize(), 100),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        Page<CreatorProfile> page = (status != null)
+                ? creatorProfileRepository.findByStatusWithUser(status, effective)
+                : creatorProfileRepository.findAllWithUser(effective);
+        return PageResponse.of(page, CreatorProfileMapper::toDto);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "catalog-filters", allEntries = true)
     public CreatorDtos.CreatorProfileDto approveCreator(UUID adminUserId, UUID creatorProfileId) {
-        CreatorProfile profile = creatorProfileRepository.findById(creatorProfileId)
+        CreatorProfile profile = creatorProfileRepository.findByIdWithUser(creatorProfileId)
                 .orElseThrow(() -> ApiException.notFound("Perfil de criador não encontrado."));
         User admin = userRepository.getReferenceById(adminUserId);
+        Instant now = clock.instant();
 
-        profile.setStatus(CreatorStatus.APPROVED);
-        profile.setRejectionReason(null);
-        profile.setReviewedBy(admin);
-        profile.setReviewedAt(Instant.now());
+        profile.approve(admin, now);
         creatorProfileRepository.save(profile);
 
         User owner = profile.getUser();
-        if (owner.getRole() == UserRole.BUYER) {
-            owner.setRole(UserRole.CREATOR);
-            userRepository.save(owner);
-        }
+        owner.promoteToCreator();
+        userRepository.save(owner);
 
         Notification notif = new Notification();
         notif.setUser(owner);
@@ -106,19 +115,16 @@ public class AdminCurationService {
                 + "' foi aprovada pela curadoria. Você já pode publicar timbres e pacotes no Estúdio do Criador.");
         notificationRepository.save(notif);
 
-        return creatorStudioService.toProfileDto(profile);
+        return CreatorProfileMapper.toDto(profile);
     }
 
     @Transactional
     public CreatorDtos.CreatorProfileDto rejectCreator(UUID adminUserId, UUID creatorProfileId, String reason) {
-        CreatorProfile profile = creatorProfileRepository.findById(creatorProfileId)
+        CreatorProfile profile = creatorProfileRepository.findByIdWithUser(creatorProfileId)
                 .orElseThrow(() -> ApiException.notFound("Perfil de criador não encontrado."));
         User admin = userRepository.getReferenceById(adminUserId);
 
-        profile.setStatus(CreatorStatus.REJECTED);
-        profile.setRejectionReason(reason.trim());
-        profile.setReviewedBy(admin);
-        profile.setReviewedAt(Instant.now());
+        profile.reject(admin, reason.trim(), clock.instant());
         creatorProfileRepository.save(profile);
 
         Notification notif = new Notification();
@@ -128,7 +134,36 @@ public class AdminCurationService {
         notif.setMessage("Sua solicitação não foi aprovada neste momento. Motivo: " + reason.trim());
         notificationRepository.save(notif);
 
-        return creatorStudioService.toProfileDto(profile);
+        return CreatorProfileMapper.toDto(profile);
+    }
+
+    /**
+     * M3: Suspends an approved creator, deactivates all their listings, and revokes CREATOR role.
+     */
+    @Transactional
+    @CacheEvict(cacheNames = "catalog-filters", allEntries = true)
+    public CreatorDtos.CreatorProfileDto suspendCreator(UUID adminUserId, UUID creatorProfileId, String reason) {
+        CreatorProfile profile = creatorProfileRepository.findByIdWithUser(creatorProfileId)
+                .orElseThrow(() -> ApiException.notFound("Perfil de criador não encontrado."));
+        User admin = userRepository.getReferenceById(adminUserId);
+
+        profile.suspend(admin, reason.trim(), clock.instant());
+        creatorProfileRepository.save(profile);
+
+        productRepository.deactivateAllByCreatorId(profile.getId());
+
+        User owner = profile.getUser();
+        owner.demoteToBuyer();
+        userRepository.save(owner);
+
+        Notification notif = new Notification();
+        notif.setUser(owner);
+        notif.setType(NotificationType.CREATOR_SUSPENDED);
+        notif.setTitle("Perfil de Criador Suspenso");
+        notif.setMessage("Sua conta de criador foi suspensa e seus anúncios foram pausados. Motivo: " + reason.trim());
+        notificationRepository.save(notif);
+
+        return CreatorProfileMapper.toDto(profile);
     }
 
     @Transactional

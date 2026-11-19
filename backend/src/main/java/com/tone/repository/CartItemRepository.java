@@ -10,7 +10,8 @@ import java.util.UUID;
 
 public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
 
-    @Query("SELECT ci FROM CartItem ci JOIN FETCH ci.product p JOIN FETCH p.creator WHERE ci.user.id = :userId ORDER BY ci.addedAt DESC")
+    @Query("SELECT ci FROM CartItem ci JOIN FETCH ci.product p JOIN FETCH p.creator c JOIN FETCH c.user " +
+           "WHERE ci.user.id = :userId ORDER BY ci.addedAt DESC")
     List<CartItem> findByUserIdWithProducts(UUID userId);
 
     Optional<CartItem> findByUserIdAndProductId(UUID userId, UUID productId);

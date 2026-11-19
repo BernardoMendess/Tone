@@ -1,31 +1,51 @@
 package com.tone.controller;
 
-import com.tone.domain.enums.PickupType;
-import com.tone.domain.enums.ProductType;
 import com.tone.dto.CatalogDtos;
 import com.tone.dto.CreatorDtos;
+import com.tone.dto.PageResponse;
 import com.tone.security.UserPrincipal;
-import com.tone.service.CreatorStudioService;
+import com.tone.service.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/creator")
+@Validated
 public class CreatorController {
 
-    private final CreatorStudioService creatorStudioService;
+    private final CreatorProfileService profileService;
+    private final ProductPublishingService productPublishingService;
+    private final BundleService bundleService;
+    private final ProductVersioningService versioningService;
+    private final CreatorDashboardService dashboardService;
+    private final PayoutService payoutService;
 
-    public CreatorController(CreatorStudioService creatorStudioService) {
-        this.creatorStudioService = creatorStudioService;
+    public CreatorController(
+            CreatorProfileService profileService,
+            ProductPublishingService productPublishingService,
+            BundleService bundleService,
+            ProductVersioningService versioningService,
+            CreatorDashboardService dashboardService,
+            PayoutService payoutService
+    ) {
+        this.profileService = profileService;
+        this.productPublishingService = productPublishingService;
+        this.bundleService = bundleService;
+        this.versioningService = versioningService;
+        this.dashboardService = dashboardService;
+        this.payoutService = payoutService;
     }
 
     @PostMapping("/apply")
@@ -34,12 +54,12 @@ public class CreatorController {
             @Valid @RequestBody CreatorDtos.CreatorApplicationRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return creatorStudioService.applyAsCreator(principal.getId(), request);
+        return profileService.applyAsCreator(principal.getId(), request);
     }
 
     @GetMapping("/profile")
     public CreatorDtos.CreatorProfileDto getMyProfile(@AuthenticationPrincipal UserPrincipal principal) {
-        return creatorStudioService.getMyCreatorProfile(principal.getId());
+        return profileService.getMyCreatorProfile(principal.getId());
     }
 
     @PutMapping("/profile")
@@ -47,36 +67,44 @@ public class CreatorController {
             @Valid @RequestBody CreatorDtos.UpdateCreatorProfileRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return creatorStudioService.updateMyProfile(principal.getId(), request);
+        return profileService.updateMyProfile(principal.getId(), request);
     }
 
     @GetMapping("/products")
-    public List<CatalogDtos.ProductCardDto> myProducts(@AuthenticationPrincipal UserPrincipal principal) {
-        return creatorStudioService.getMyProducts(principal.getId());
+    public PageResponse<CatalogDtos.ProductCardDto> myProducts(
+            @PageableDefault(size = 24) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return productPublishingService.getMyProducts(principal.getId(), pageable);
     }
 
     @PostMapping(value = "/products", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public CatalogDtos.ProductCardDto createProduct(
-            @RequestParam String title,
-            @RequestParam String description,
-            @RequestParam BigDecimal price,
-            @RequestParam ProductType productType,
-            @RequestParam String genre,
-            @RequestParam String targetGear,
-            @RequestParam String sourceGear,
-            @RequestParam PickupType pickupType,
-            @RequestParam(required = false) String tags,
-            @RequestParam(required = false) String videoUrl,
-            @RequestParam(required = false, defaultValue = "1.0.0") String version,
+            @Valid @ModelAttribute CreatorDtos.CreateProductForm form,
             @RequestPart("patchFile") MultipartFile patchFile,
             @RequestPart("demoAudioFile") MultipartFile demoAudioFile,
             @AuthenticationPrincipal UserPrincipal principal
     ) throws IOException {
-        return creatorStudioService.createProduct(
-                principal.getId(), title, description, price, productType, genre,
-                targetGear, sourceGear, pickupType, tags, videoUrl, version, patchFile, demoAudioFile
-        );
+        return productPublishingService.createProduct(principal.getId(), form, patchFile, demoAudioFile);
+    }
+
+    @PatchMapping("/products/{productId}")
+    public CatalogDtos.ProductCardDto updateProduct(
+            @PathVariable UUID productId,
+            @Valid @RequestBody CreatorDtos.UpdateProductRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return productPublishingService.updateProduct(principal.getId(), productId, request);
+    }
+
+    @DeleteMapping("/products/{productId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateProduct(
+            @PathVariable UUID productId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        productPublishingService.deactivateProduct(principal.getId(), productId);
     }
 
     @PostMapping("/bundles")
@@ -85,7 +113,7 @@ public class CreatorController {
             @Valid @RequestBody CreatorDtos.CreateBundleRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return creatorStudioService.createBundle(principal.getId(), request);
+        return bundleService.createBundle(principal.getId(), request);
     }
 
     @PostMapping(value = "/products/{productId}/versions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -97,20 +125,21 @@ public class CreatorController {
             @RequestPart("patchFile") MultipartFile patchFile,
             @AuthenticationPrincipal UserPrincipal principal
     ) throws IOException {
-        return creatorStudioService.publishNewVersion(principal.getId(), productId, versionNumber, changelog, patchFile);
+        return versioningService.publishNewVersion(principal.getId(), productId, versionNumber, changelog, patchFile);
     }
 
     @GetMapping("/dashboard")
     public CreatorDtos.CreatorDashboardDto getDashboard(@AuthenticationPrincipal UserPrincipal principal) {
-        return creatorStudioService.getFinancialDashboard(principal.getId());
+        return dashboardService.getFinancialDashboard(principal.getId());
     }
 
     @PostMapping("/payouts")
     @ResponseStatus(HttpStatus.CREATED)
     public CreatorDtos.PayoutDto requestPayout(
+            @RequestHeader("Idempotency-Key") @NotBlank @Size(min = 8, max = 80) String idempotencyKey,
             @Valid @RequestBody CreatorDtos.RequestPayoutRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return creatorStudioService.requestPayout(principal.getId(), request);
+        return payoutService.requestPayout(principal.getId(), idempotencyKey, request);
     }
 }

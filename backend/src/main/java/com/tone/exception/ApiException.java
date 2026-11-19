@@ -3,6 +3,7 @@ package com.tone.exception;
 import org.springframework.http.HttpStatus;
 
 public class ApiException extends RuntimeException {
+
     private final HttpStatus status;
 
     public ApiException(HttpStatus status, String message) {
@@ -32,5 +33,21 @@ public class ApiException extends RuntimeException {
 
     public static ApiException conflict(String message) {
         return new ApiException(HttpStatus.CONFLICT, message);
+    }
+
+    public static ApiException payloadTooLarge(String message) {
+        return new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, message);
+    }
+
+    public static ApiException unprocessable(String message) {
+        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, message);
+    }
+
+    public static ApiException tooManyRequests(String message) {
+        return new ApiException(HttpStatus.TOO_MANY_REQUESTS, message);
+    }
+
+    public static ApiException badGateway(String message) {
+        return new ApiException(HttpStatus.BAD_GATEWAY, message);
     }
 }

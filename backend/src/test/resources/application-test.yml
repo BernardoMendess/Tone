@@ -11,9 +11,18 @@ spring:
       ddl-auto: validate
 
 app:
+  jwt:
+    secret: test-only-jwt-secret-0123456789abcdef0123456789abcdef
+    cookie-secure: false
+  security:
+    rate-limit-enabled: false
+  payment:
+    webhook-secret: test-only-webhook-secret-0123456789abcdef0123456789
+    sandbox-enabled: true
   storage:
     type: local
     local-root: ./target/test-vault
+    signing-secret: test-only-storage-secret-0123456789abcdef0123456789
   audio:
     enable-ffmpeg-if-present: false
   seed:

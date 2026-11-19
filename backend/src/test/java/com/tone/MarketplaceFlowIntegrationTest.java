@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -31,27 +32,32 @@ class MarketplaceFlowIntegrationTest {
 
     @Test
     void fullMarketplaceLifecycleCoversAllCoreRequirements() throws Exception {
-        // 1. RF01: Cross-filtered catalog search
+        // 1. RF01 + A4: Paginated cross-filtered catalog search
         MvcResult catalogRes = mockMvc.perform(get("/api/products")
                         .param("genre", "Worship")
                         .param("targetGear", "Line 6 Helix")
                         .param("pickupType", "SINGLE_COIL"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").isNumber())
                 .andReturn();
-        JsonNode products = objectMapper.readTree(catalogRes.getResponse().getContentAsString());
-        assertThat(products.isArray()).isTrue();
+        JsonNode products = objectMapper.readTree(catalogRes.getResponse().getContentAsString()).get("content");
         assertThat(products.size()).isGreaterThanOrEqualTo(1);
         String ac30Id = products.get(0).get("id").asText();
 
-        // 2. RF02 + RNF03 + RNF04: Demo audio stream with normalization & anti-ripping headers
+        // 2. RF02 + RNF03 + RNF04 + A6: Demo audio streaming with ResourceRegion & Range support
         mockMvc.perform(get("/api/audio/demo/" + ac30Id))
                 .andExpect(status().isOk())
                 .andExpect(header().exists("X-Audio-LUFS"))
                 .andExpect(header().string("X-Audio-Protection", "COMPRESSED_PREVIEW_NO_RAW_IR"))
                 .andExpect(header().string("Accept-Ranges", "bytes"));
 
-        // 3. Register a fresh buyer
-        String buyerToken = registerAndGetToken("Teste Comprador", "newbuyer@tone.com", "Secret123!");
+        mockMvc.perform(get("/api/audio/demo/" + ac30Id).header("Range", "bytes=0-1023"))
+                .andExpect(status().isPartialContent())
+                .andExpect(header().exists("Content-Range"));
+
+        // 3. Register a fresh buyer (10+ char password)
+        String buyerToken = registerAndGetToken("Teste Comprador", "newbuyer@tone.com", "Secret1234!");
 
         // 4. RNF02 & RF05: Unpurchased buyer CANNOT presign download or submit a review
         mockMvc.perform(post("/api/library/downloads/" + ac30Id + "/presign")
@@ -70,14 +76,16 @@ class MarketplaceFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.wishlisted").value(true));
 
-        // 6. RF03 & RF13: Add to cart -> PIX Checkout -> Split calculation -> Webhook confirmation
+        // 6. RF03 & RF13 & A1: Add to cart -> Idempotent PIX Checkout -> Sandbox Webhook confirmation
         mockMvc.perform(post("/api/cart/" + ac30Id)
                         .header("Authorization", "Bearer " + buyerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.count").value(1));
 
+        String checkoutKey = UUID.randomUUID().toString();
         MvcResult checkoutRes = mockMvc.perform(post("/api/checkout")
                         .header("Authorization", "Bearer " + buyerToken)
+                        .header("Idempotency-Key", checkoutKey)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("paymentMethod", "PIX"))))
                 .andExpect(status().isCreated())
@@ -90,14 +98,14 @@ class MarketplaceFlowIntegrationTest {
         String orderId = orderJson.get("id").asText();
         assertThat(orderJson.get("pixCopyPaste").asText()).startsWith("000201");
 
-        // Confirm PIX payment via signed webhook simulator
-        mockMvc.perform(post("/api/orders/" + orderId + "/simulate-pix-payment")
+        // Confirm PIX payment via isolated dev/test sandbox endpoint (C1)
+        mockMvc.perform(post("/api/sandbox/orders/" + orderId + "/confirm-payment")
                         .header("Authorization", "Bearer " + buyerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PAID"))
                 .andExpect(jsonPath("$.splits[0].status").value("SETTLED"));
 
-        // 7. RF04 & RNF02: Buyer can now generate a valid Presigned URL and download binary, tampered sig rejected!
+        // 7. RF04 & RNF02 & B6: Single-use presigned URL download + tampered & replay rejected!
         MvcResult presignRes = mockMvc.perform(post("/api/library/downloads/" + ac30Id + "/presign")
                         .header("Authorization", "Bearer " + buyerToken))
                 .andExpect(status().isOk())
@@ -111,6 +119,10 @@ class MarketplaceFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")));
 
+        // Replay of single-use presigned link must be rejected
+        mockMvc.perform(get(relativePath))
+                .andExpect(status().isForbidden());
+
         // Tampered signature must be rejected
         mockMvc.perform(get(relativePath + "TAMPERED"))
                 .andExpect(status().isForbidden());
@@ -123,8 +135,8 @@ class MarketplaceFlowIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.verifiedPurchase").value(true));
 
-        // 9. RF12 + RF07 + RF09: Creator curation approval, product creation & version update notification
-        String applicantToken = registerAndGetToken("Novo Criador", "newcreator@tone.com", "Secret123!");
+        // 9. RF12 + RF07 + RF09: Creator curation approval, product creation & version update
+        String applicantToken = registerAndGetToken("Novo Criador", "newcreator@tone.com", "Secret1234!");
         MvcResult applyRes = mockMvc.perform(post("/api/creator/apply")
                         .header("Authorization", "Bearer " + applicantToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -182,7 +194,7 @@ class MarketplaceFlowIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.versionNumber").value("1.1.0"));
 
-        // 10. RF10: Approved seeded creator checks Financial Dashboard and requests PIX payout
+        // 10. RF10 + C5: Approved seeded creator checks Financial Dashboard and requests idempotent PIX payout
         String lucasToken = loginAndGetToken("lucas@tone.com", "Creator@123");
         MvcResult dashRes = mockMvc.perform(get("/api/creator/dashboard")
                         .header("Authorization", "Bearer " + lucasToken))
@@ -197,26 +209,29 @@ class MarketplaceFlowIntegrationTest {
 
         mockMvc.perform(post("/api/creator/payouts")
                         .header("Authorization", "Bearer " + lucasToken)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("amount", 10.00, "pixKey", "lucas@tone.com"))))
+                        .content(objectMapper.writeValueAsString(Map.of("amount", 10.00))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.status").value("PROCESSING"))
+                .andExpect(jsonPath("$.pixKey").value("lucas@tone.com"));
 
-        // Overdraft payout must fail with 400
+        // Overdraft payout must fail with 422 Unprocessable Entity
         mockMvc.perform(post("/api/creator/payouts")
                         .header("Authorization", "Bearer " + lucasToken)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("amount", 99999.00))))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnprocessableEntity());
 
-        // 11. RF08 + RF04: Seeded buyer purchased Heavy Studio Essentials Bundle -> all 3 included patches unlocked in Library!
+        // 11. RF08 + RF04: Seeded buyer purchased Heavy Studio Essentials Bundle -> all 3 included patches unlocked
         String seededBuyerToken = loginAndGetToken("buyer@tone.com", "Buyer@123");
         MvcResult libRes = mockMvc.perform(get("/api/library")
                         .header("Authorization", "Bearer " + seededBuyerToken))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode library = objectMapper.readTree(libRes.getResponse().getContentAsString());
-        assertThat(library.size()).isGreaterThanOrEqualTo(5); // 2 individual + 3 unlocked from bundle2
+        assertThat(library.size()).isGreaterThanOrEqualTo(5);
     }
 
     private String registerAndGetToken(String name, String email, String password) throws Exception {

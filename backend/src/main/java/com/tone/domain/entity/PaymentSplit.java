@@ -1,9 +1,16 @@
 package com.tone.domain.entity;
 
 import com.tone.domain.enums.SplitStatus;
+import com.tone.exception.InvalidStateTransitionException;
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -43,35 +50,94 @@ public class PaymentSplit {
     @Column(name = "settled_at")
     private Instant settledAt;
 
+    @Column(name = "available_at")
+    private Instant availableAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    protected PaymentSplit() {}
+
+    public static List<PaymentSplit> aggregateByCreator(
+            Order order,
+            List<OrderItem> items,
+            BigDecimal takeRate,
+            Instant now
+    ) {
+        Map<UUID, Accumulator> byCreator = new LinkedHashMap<>();
+        for (OrderItem oi : items) {
+            byCreator.computeIfAbsent(oi.getCreator().getId(), k -> new Accumulator(oi.getCreator()))
+                    .add(oi.getUnitPrice(), oi.getPlatformFeeAmount(), oi.getCreatorNetAmount());
+        }
+        List<PaymentSplit> result = new ArrayList<>(byCreator.size());
+        BigDecimal rate = takeRate.setScale(2, RoundingMode.HALF_UP);
+        for (Accumulator acc : byCreator.values()) {
+            PaymentSplit split = new PaymentSplit();
+            split.id = UUID.randomUUID();
+            split.order = order;
+            split.creator = acc.creator;
+            split.grossAmount = acc.gross.setScale(2, RoundingMode.HALF_UP);
+            split.platformFeeAmount = acc.fee.setScale(2, RoundingMode.HALF_UP);
+            split.creatorNetAmount = acc.net.setScale(2, RoundingMode.HALF_UP);
+            split.takeRatePercent = rate;
+            split.status = SplitStatus.SCHEDULED;
+            split.createdAt = now;
+            result.add(split);
+        }
+        return result;
+    }
+
+    public void assignGatewayReference(String reference) {
+        this.gatewaySplitReference = reference;
+    }
+
+    public void markSettled(Instant settledAt, Instant availableAt) {
+        if (this.status != SplitStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException("PaymentSplit", id, this.status, SplitStatus.SETTLED);
+        }
+        this.status = SplitStatus.SETTLED;
+        this.settledAt = settledAt;
+        this.availableAt = availableAt;
+    }
+
+    public void markRefunded() {
+        if (this.status != SplitStatus.SETTLED && this.status != SplitStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException("PaymentSplit", id, this.status, SplitStatus.REFUNDED);
+        }
+        this.status = SplitStatus.REFUNDED;
+    }
+
     @PrePersist
-    public void prePersist() {
+    void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (createdAt == null) createdAt = Instant.now();
     }
 
     public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
     public Order getOrder() { return order; }
-    public void setOrder(Order order) { this.order = order; }
     public CreatorProfile getCreator() { return creator; }
-    public void setCreator(CreatorProfile creator) { this.creator = creator; }
     public BigDecimal getGrossAmount() { return grossAmount; }
-    public void setGrossAmount(BigDecimal grossAmount) { this.grossAmount = grossAmount; }
     public BigDecimal getPlatformFeeAmount() { return platformFeeAmount; }
-    public void setPlatformFeeAmount(BigDecimal platformFeeAmount) { this.platformFeeAmount = platformFeeAmount; }
     public BigDecimal getCreatorNetAmount() { return creatorNetAmount; }
-    public void setCreatorNetAmount(BigDecimal creatorNetAmount) { this.creatorNetAmount = creatorNetAmount; }
     public BigDecimal getTakeRatePercent() { return takeRatePercent; }
-    public void setTakeRatePercent(BigDecimal takeRatePercent) { this.takeRatePercent = takeRatePercent; }
     public SplitStatus getStatus() { return status; }
-    public void setStatus(SplitStatus status) { this.status = status; }
     public String getGatewaySplitReference() { return gatewaySplitReference; }
-    public void setGatewaySplitReference(String gatewaySplitReference) { this.gatewaySplitReference = gatewaySplitReference; }
     public Instant getSettledAt() { return settledAt; }
-    public void setSettledAt(Instant settledAt) { this.settledAt = settledAt; }
+    public Instant getAvailableAt() { return availableAt; }
     public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    private static final class Accumulator {
+        final CreatorProfile creator;
+        BigDecimal gross = BigDecimal.ZERO;
+        BigDecimal fee = BigDecimal.ZERO;
+        BigDecimal net = BigDecimal.ZERO;
+
+        Accumulator(CreatorProfile creator) { this.creator = creator; }
+
+        void add(BigDecimal g, BigDecimal f, BigDecimal n) {
+            gross = gross.add(g);
+            fee = fee.add(f);
+            net = net.add(n);
+        }
+    }
 }

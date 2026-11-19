@@ -2,8 +2,10 @@ package com.tone.dto;
 
 import com.tone.domain.enums.NotificationType;
 import com.tone.domain.enums.OrderStatus;
+import com.tone.domain.enums.PaymentEventType;
 import com.tone.domain.enums.PaymentMethod;
 import com.tone.domain.enums.SplitStatus;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
@@ -28,8 +30,7 @@ public final class OrderDtos {
     ) {}
 
     public record CheckoutRequest(
-            @NotNull PaymentMethod paymentMethod,
-            String cardLast4
+            @NotNull PaymentMethod paymentMethod
     ) {}
 
     public record OrderItemDto(
@@ -54,7 +55,8 @@ public final class OrderDtos {
             BigDecimal creatorNetAmount,
             BigDecimal takeRatePercent,
             SplitStatus status,
-            String gatewaySplitReference
+            String gatewaySplitReference,
+            Instant availableAt
     ) {}
 
     public record OrderDto(
@@ -74,10 +76,11 @@ public final class OrderDtos {
             List<PaymentSplitDto> splits
     ) {}
 
-    public record PaymentWebhookRequest(
-            String gatewayTransactionId,
-            String eventType,
-            String signature
+    public record PaymentWebhookEvent(
+            @NotBlank String eventId,
+            @NotBlank String gatewayTransactionId,
+            @NotNull PaymentEventType eventType,
+            @NotNull BigDecimal amount
     ) {}
 
     public record LibraryItemDto(

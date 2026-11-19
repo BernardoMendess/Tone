@@ -4,19 +4,23 @@ import com.tone.domain.entity.CartItem;
 import com.tone.domain.entity.Product;
 import com.tone.domain.entity.User;
 import com.tone.domain.entity.WishlistItem;
-import com.tone.domain.enums.CreatorStatus;
 import com.tone.domain.enums.OrderStatus;
+import com.tone.domain.enums.ProductType;
 import com.tone.dto.CatalogDtos;
 import com.tone.dto.OrderDtos;
 import com.tone.exception.ApiException;
 import com.tone.repository.*;
+import com.tone.service.mapper.ProductCardMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class CartWishlistService {
@@ -24,36 +28,43 @@ public class CartWishlistService {
     private final CartItemRepository cartItemRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final ProductRepository productRepository;
+    private final BundleItemRepository bundleItemRepository;
     private final UserRepository userRepository;
     private final OrderItemRepository orderItemRepository;
-    private final CatalogService catalogService;
+    private final ProductCardMapper productCardMapper;
     private final PlatformSettingsService platformSettingsService;
 
     public CartWishlistService(
             CartItemRepository cartItemRepository,
             WishlistItemRepository wishlistItemRepository,
             ProductRepository productRepository,
+            BundleItemRepository bundleItemRepository,
             UserRepository userRepository,
             OrderItemRepository orderItemRepository,
-            CatalogService catalogService,
+            ProductCardMapper productCardMapper,
             PlatformSettingsService platformSettingsService
     ) {
         this.cartItemRepository = cartItemRepository;
         this.wishlistItemRepository = wishlistItemRepository;
         this.productRepository = productRepository;
+        this.bundleItemRepository = bundleItemRepository;
         this.userRepository = userRepository;
         this.orderItemRepository = orderItemRepository;
-        this.catalogService = catalogService;
+        this.productCardMapper = productCardMapper;
         this.platformSettingsService = platformSettingsService;
     }
 
     @Transactional(readOnly = true)
     public OrderDtos.CartDto getCart(UUID userId) {
         List<CartItem> items = cartItemRepository.findByUserIdWithProducts(userId);
+        List<Product> products = items.stream().map(CartItem::getProduct).toList();
+        Map<UUID, CatalogDtos.ProductCardDto> cardsById = productCardMapper.toCards(products).stream()
+                .collect(Collectors.toMap(CatalogDtos.ProductCardDto::id, Function.identity()));
+
         List<OrderDtos.CartItemDto> itemDtos = items.stream()
                 .map(ci -> new OrderDtos.CartItemDto(
                         ci.getProduct().getId(),
-                        catalogService.toProductCard(ci.getProduct()),
+                        cardsById.get(ci.getProduct().getId()),
                         ci.getAddedAt()
                 ))
                 .toList();
@@ -73,11 +84,18 @@ public class CartWishlistService {
     public OrderDtos.CartDto addToCart(UUID userId, UUID productId) {
         Product product = productRepository.findByIdWithCreator(productId)
                 .orElseThrow(() -> ApiException.notFound("Timbre não encontrado."));
-        if (!product.isActive() || product.getCreator().getStatus() != CreatorStatus.APPROVED) {
-            throw ApiException.badRequest("Este timbre não está disponível para compra no momento.");
+        if (!product.isPurchasable()) {
+            throw ApiException.unprocessable("Este timbre não está disponível para compra no momento.");
+        }
+        if (product.isOwnedBy(userId)) {
+            throw ApiException.unprocessable("Você não pode adicionar seu próprio timbre ao carrinho.");
         }
         if (orderItemRepository.hasVerifiedPurchase(userId, productId, OrderStatus.PAID)) {
             throw ApiException.conflict("Você já possui este timbre na sua Biblioteca Digital.");
+        }
+        if (product.getProductType() == ProductType.BUNDLE
+                && bundleItemRepository.countNotOwnedItems(product.getId(), userId, OrderStatus.PAID) == 0) {
+            throw ApiException.conflict("Você já possui todos os timbres incluídos neste pacote.");
         }
         if (cartItemRepository.findByUserIdAndProductId(userId, productId).isEmpty()) {
             User user = userRepository.getReferenceById(userId);
@@ -101,13 +119,13 @@ public class CartWishlistService {
         return getCart(userId);
     }
 
-    // --- RF06: Wishlist ---
-
     @Transactional(readOnly = true)
     public List<CatalogDtos.ProductCardDto> getWishlist(UUID userId) {
-        return wishlistItemRepository.findByUserIdWithProducts(userId).stream()
-                .map(wi -> catalogService.toProductCard(wi.getProduct()))
+        List<Product> products = wishlistItemRepository.findByUserIdWithProducts(userId).stream()
+                .map(WishlistItem::getProduct)
+                .filter(Product::isPurchasable)
                 .toList();
+        return productCardMapper.toCards(products);
     }
 
     @Transactional
@@ -119,6 +137,9 @@ public class CartWishlistService {
         }
         Product product = productRepository.findByIdWithCreator(productId)
                 .orElseThrow(() -> ApiException.notFound("Timbre não encontrado."));
+        if (!product.isPurchasable()) {
+            throw ApiException.notFound("Timbre não encontrado.");
+        }
         WishlistItem item = new WishlistItem();
         item.setUser(userRepository.getReferenceById(userId));
         item.setProduct(product);

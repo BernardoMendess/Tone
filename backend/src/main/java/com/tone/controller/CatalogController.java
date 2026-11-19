@@ -2,11 +2,15 @@ package com.tone.controller;
 
 import com.tone.domain.enums.PickupType;
 import com.tone.domain.enums.ProductType;
+import com.tone.domain.enums.UserRole;
 import com.tone.dto.CatalogDtos;
+import com.tone.dto.PageResponse;
 import com.tone.security.UserPrincipal;
 import com.tone.service.CatalogService;
 import com.tone.service.ReviewService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +32,7 @@ public class CatalogController {
     }
 
     @GetMapping("/products")
-    public List<CatalogDtos.ProductCardDto> searchProducts(
+    public PageResponse<CatalogDtos.ProductCardDto> searchProducts(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String targetGear,
@@ -37,9 +41,11 @@ public class CatalogController {
             @RequestParam(required = false) ProductType productType,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false, defaultValue = "popular") String sort
+            @RequestParam(required = false, defaultValue = "popular") String sort,
+            @PageableDefault(size = 24) Pageable pageable
     ) {
-        return catalogService.searchProducts(q, genre, targetGear, sourceGear, pickupType, productType, minPrice, maxPrice, sort);
+        return catalogService.searchProducts(
+                q, genre, targetGear, sourceGear, pickupType, productType, minPrice, maxPrice, sort, pageable);
     }
 
     @GetMapping("/products/filters")
@@ -53,7 +59,8 @@ public class CatalogController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         UUID userId = principal != null ? principal.getId() : null;
-        return catalogService.getProductDetail(slugOrId, userId);
+        UserRole role = principal != null ? principal.getRole() : null;
+        return catalogService.getProductDetail(slugOrId, userId, role);
     }
 
     @GetMapping("/products/{productId}/reviews")

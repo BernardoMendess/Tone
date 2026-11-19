@@ -1,7 +1,9 @@
 package com.tone.domain.entity;
 
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 @Entity
@@ -41,29 +43,41 @@ public class OrderItem {
     @Column(name = "creator_net_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal creatorNetAmount;
 
+    protected OrderItem() {}
+
+    public static OrderItem snapshot(Order order, Product product, BigDecimal takeRate, String versionOverride) {
+        BigDecimal gross = product.getPrice().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal rate = takeRate.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal fee = gross.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal net = gross.subtract(fee).setScale(2, RoundingMode.HALF_UP);
+
+        OrderItem oi = new OrderItem();
+        oi.id = UUID.randomUUID();
+        oi.order = order;
+        oi.product = product;
+        oi.creator = product.getCreator();
+        oi.productTitleSnapshot = product.getTitle();
+        oi.purchasedVersion = versionOverride != null ? versionOverride : product.getCurrentVersion();
+        oi.unitPrice = gross;
+        oi.takeRatePercent = rate;
+        oi.platformFeeAmount = fee;
+        oi.creatorNetAmount = net;
+        return oi;
+    }
+
     @PrePersist
-    public void prePersist() {
+    void prePersist() {
         if (id == null) id = UUID.randomUUID();
     }
 
     public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
     public Order getOrder() { return order; }
-    public void setOrder(Order order) { this.order = order; }
     public Product getProduct() { return product; }
-    public void setProduct(Product product) { this.product = product; }
     public CreatorProfile getCreator() { return creator; }
-    public void setCreator(CreatorProfile creator) { this.creator = creator; }
     public String getProductTitleSnapshot() { return productTitleSnapshot; }
-    public void setProductTitleSnapshot(String productTitleSnapshot) { this.productTitleSnapshot = productTitleSnapshot; }
     public String getPurchasedVersion() { return purchasedVersion; }
-    public void setPurchasedVersion(String purchasedVersion) { this.purchasedVersion = purchasedVersion; }
     public BigDecimal getUnitPrice() { return unitPrice; }
-    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
     public BigDecimal getTakeRatePercent() { return takeRatePercent; }
-    public void setTakeRatePercent(BigDecimal takeRatePercent) { this.takeRatePercent = takeRatePercent; }
     public BigDecimal getPlatformFeeAmount() { return platformFeeAmount; }
-    public void setPlatformFeeAmount(BigDecimal platformFeeAmount) { this.platformFeeAmount = platformFeeAmount; }
     public BigDecimal getCreatorNetAmount() { return creatorNetAmount; }
-    public void setCreatorNetAmount(BigDecimal creatorNetAmount) { this.creatorNetAmount = creatorNetAmount; }
 }

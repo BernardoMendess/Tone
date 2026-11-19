@@ -3,12 +3,14 @@ package com.tone.service;
 import com.tone.domain.entity.PlatformSetting;
 import com.tone.repository.PlatformSettingRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
+import java.time.Clock;
 
 @Service
 public class PlatformSettingsService {
@@ -17,28 +19,34 @@ public class PlatformSettingsService {
 
     private final PlatformSettingRepository settingRepository;
     private final BigDecimal fallbackTakeRate;
+    private final Clock clock;
 
     public PlatformSettingsService(
             PlatformSettingRepository settingRepository,
-            @Value("${app.payment.default-take-rate-percent:15.00}") BigDecimal fallbackTakeRate
+            @Value("${app.payment.default-take-rate-percent:15.00}") BigDecimal fallbackTakeRate,
+            Clock clock
     ) {
         this.settingRepository = settingRepository;
         this.fallbackTakeRate = fallbackTakeRate;
+        this.clock = clock;
     }
 
+    @Cacheable(cacheNames = "platform-settings", key = "'takeRate'")
+    @Transactional(readOnly = true)
     public BigDecimal getTakeRatePercent() {
         return settingRepository.findById(KEY_TAKE_RATE)
                 .map(s -> new BigDecimal(s.getSettingValue()).setScale(2, RoundingMode.HALF_UP))
                 .orElse(fallbackTakeRate.setScale(2, RoundingMode.HALF_UP));
     }
 
+    @CacheEvict(cacheNames = "platform-settings", key = "'takeRate'")
     @Transactional
     public BigDecimal updateTakeRatePercent(BigDecimal newRate) {
         BigDecimal scaled = newRate.setScale(2, RoundingMode.HALF_UP);
         PlatformSetting setting = settingRepository.findById(KEY_TAKE_RATE)
                 .orElseGet(() -> new PlatformSetting(KEY_TAKE_RATE, scaled.toPlainString()));
         setting.setSettingValue(scaled.toPlainString());
-        setting.setUpdatedAt(Instant.now());
+        setting.setUpdatedAt(clock.instant());
         settingRepository.save(setting);
         return scaled;
     }

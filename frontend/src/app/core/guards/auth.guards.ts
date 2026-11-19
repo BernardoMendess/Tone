@@ -11,6 +11,15 @@ export const authGuard: CanActivateFn = (_route, state) => {
   return router.createUrlTree(['/auth'], { queryParams: { redirect: state.url } });
 };
 
+export const creatorGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.isApprovedCreator() || auth.isAdmin()) {
+    return true;
+  }
+  return router.createUrlTree(['/studio']);
+};
+
 export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);

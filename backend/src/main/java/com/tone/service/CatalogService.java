@@ -1,17 +1,25 @@
 package com.tone.service;
 
-import com.tone.domain.entity.BundleItem;
 import com.tone.domain.entity.CreatorProfile;
 import com.tone.domain.entity.Product;
 import com.tone.domain.enums.CreatorStatus;
 import com.tone.domain.enums.OrderStatus;
 import com.tone.domain.enums.PickupType;
 import com.tone.domain.enums.ProductType;
+import com.tone.domain.enums.UserRole;
 import com.tone.dto.CatalogDtos;
+import com.tone.dto.PageResponse;
 import com.tone.exception.ApiException;
 import com.tone.repository.*;
+import com.tone.service.mapper.ProductCardMapper;
+import com.tone.service.mapper.ProductVersionMapper;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -32,6 +40,7 @@ public class CatalogService {
     private final CreatorProfileRepository creatorProfileRepository;
     private final OrderItemRepository orderItemRepository;
     private final WishlistItemRepository wishlistItemRepository;
+    private final ProductCardMapper productCardMapper;
 
     public CatalogService(
             ProductRepository productRepository,
@@ -40,7 +49,8 @@ public class CatalogService {
             ReviewRepository reviewRepository,
             CreatorProfileRepository creatorProfileRepository,
             OrderItemRepository orderItemRepository,
-            WishlistItemRepository wishlistItemRepository
+            WishlistItemRepository wishlistItemRepository,
+            ProductCardMapper productCardMapper
     ) {
         this.productRepository = productRepository;
         this.versionRepository = versionRepository;
@@ -49,13 +59,14 @@ public class CatalogService {
         this.creatorProfileRepository = creatorProfileRepository;
         this.orderItemRepository = orderItemRepository;
         this.wishlistItemRepository = wishlistItemRepository;
+        this.productCardMapper = productCardMapper;
     }
 
     /**
-     * RF01 - Pesquisa e Filtragem cruzada por gênero musical, equipamento de destino,
-     * equipamento de origem, tipo de captação, tipo de ativo e busca textual.
+     * A4 + B3: Paginated cross-filtered catalog search with escaped LIKE wildcards,
+     * JOIN FETCH on non-count query, and batch bundle aggregation (zero N+1).
      */
-    public List<CatalogDtos.ProductCardDto> searchProducts(
+    public PageResponse<CatalogDtos.ProductCardDto> searchProducts(
             String query,
             String genre,
             String targetGear,
@@ -64,24 +75,35 @@ public class CatalogService {
             ProductType productType,
             BigDecimal minPrice,
             BigDecimal maxPrice,
-            String sortBy
+            String sortBy,
+            Pageable pageable
     ) {
         Specification<Product> spec = (root, cq, cb) -> {
-            var creatorJoin = root.join("creator", JoinType.INNER);
+            Join<Object, Object> creatorJoin;
+            boolean isCountQuery = cq != null
+                    && (cq.getResultType() == Long.class || cq.getResultType() == long.class);
+            if (!isCountQuery) {
+                @SuppressWarnings("unchecked")
+                Join<Object, Object> fetched = (Join<Object, Object>) root.fetch("creator", JoinType.INNER);
+                creatorJoin = fetched;
+            } else {
+                creatorJoin = root.join("creator", JoinType.INNER);
+            }
+
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isTrue(root.get("active")));
             predicates.add(cb.equal(creatorJoin.get("status"), CreatorStatus.APPROVED));
 
             if (query != null && !query.isBlank()) {
-                String pattern = "%" + query.trim().toLowerCase(Locale.ROOT) + "%";
+                String pattern = "%" + escapeLike(query.trim().toLowerCase(Locale.ROOT)) + "%";
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("title")), pattern),
-                        cb.like(cb.lower(root.get("description")), pattern),
-                        cb.like(cb.lower(root.get("tags")), pattern),
-                        cb.like(cb.lower(root.get("targetGear")), pattern),
-                        cb.like(cb.lower(root.get("sourceGear")), pattern),
-                        cb.like(cb.lower(root.get("genre")), pattern),
-                        cb.like(cb.lower(creatorJoin.get("displayName")), pattern)
+                        cb.like(cb.lower(root.get("title")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("description")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("tags")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("targetGear")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("sourceGear")), pattern, '\\'),
+                        cb.like(cb.lower(root.get("genre")), pattern, '\\'),
+                        cb.like(cb.lower(creatorJoin.get("displayName")), pattern, '\\')
                 ));
             }
             if (genre != null && !genre.isBlank()) {
@@ -119,10 +141,14 @@ public class CatalogService {
             default -> Sort.by(Sort.Direction.DESC, "salesCount", "createdAt");
         };
 
-        List<Product> products = productRepository.findAll(spec, sort);
-        return products.stream().map(this::toProductCard).toList();
+        int safeSize = Math.min(Math.max(pageable.getPageSize(), 1), 100);
+        Pageable effective = PageRequest.of(Math.max(pageable.getPageNumber(), 0), safeSize, sort);
+        Page<Product> page = productRepository.findAll(spec, effective);
+        List<CatalogDtos.ProductCardDto> cards = productCardMapper.toCards(page.getContent());
+        return PageResponse.of(cards, page);
     }
 
+    @Cacheable(cacheNames = "catalog-filters", key = "'all'")
     public CatalogDtos.FilterOptionsDto getFilterOptions() {
         return new CatalogDtos.FilterOptionsDto(
                 productRepository.findDistinctGenres(CreatorStatus.APPROVED),
@@ -133,25 +159,21 @@ public class CatalogService {
         );
     }
 
-    public CatalogDtos.ProductDetailDto getProductDetail(String slugOrId, UUID currentUserId) {
-        Product product = resolveProduct(slugOrId);
+    public CatalogDtos.ProductDetailDto getProductDetail(String slugOrId, UUID currentUserId, UserRole currentRole) {
+        Product product = resolveVisibleProduct(slugOrId, currentUserId, currentRole);
+
         List<CatalogDtos.ProductVersionDto> versions = versionRepository
                 .findByProductIdOrderByCreatedAtDesc(product.getId())
                 .stream()
-                .map(v -> new CatalogDtos.ProductVersionDto(
-                        v.getId(),
-                        v.getVersionNumber(),
-                        v.getChangelog(),
-                        v.getOriginalFilename(),
-                        v.getFileSizeBytes(),
-                        v.getCreatedAt()
-                ))
+                .map(ProductVersionMapper::toDto)
                 .toList();
 
         List<CatalogDtos.ProductCardDto> bundleItems = product.getProductType() == ProductType.BUNDLE
-                ? bundleItemRepository.findByBundleIdWithProducts(product.getId()).stream()
-                        .map(bi -> toProductCard(bi.getIncludedProduct()))
-                        .toList()
+                ? productCardMapper.toCards(
+                        bundleItemRepository.findByBundleIdWithProducts(product.getId()).stream()
+                                .map(bi -> bi.getIncludedProduct())
+                                .toList()
+                )
                 : List.of();
 
         List<CatalogDtos.ReviewDto> reviews = reviewRepository.findByProductIdWithUser(product.getId()).stream()
@@ -167,20 +189,21 @@ public class CatalogService {
                 ))
                 .toList();
 
-        boolean owned = currentUserId != null &&
-                orderItemRepository.hasVerifiedPurchase(currentUserId, product.getId(), OrderStatus.PAID);
-        boolean wishlisted = currentUserId != null &&
-                wishlistItemRepository.existsByUserIdAndProductId(currentUserId, product.getId());
+        boolean owned = currentUserId != null
+                && orderItemRepository.hasVerifiedPurchase(currentUserId, product.getId(), OrderStatus.PAID);
+        boolean wishlisted = currentUserId != null
+                && wishlistItemRepository.existsByUserIdAndProductId(currentUserId, product.getId());
+        boolean canReview = owned && !product.isOwnedBy(currentUserId);
 
         return new CatalogDtos.ProductDetailDto(
-                toProductCard(product),
+                productCardMapper.toCard(product),
                 product.getVideoUrl(),
                 versions,
                 bundleItems,
                 reviews,
                 owned,
                 wishlisted,
-                owned
+                canReview
         );
     }
 
@@ -213,11 +236,26 @@ public class CatalogService {
                 products.size(),
                 totalSales,
                 avgRating,
-                products.stream().map(this::toProductCard).toList()
+                productCardMapper.toCards(products)
         );
     }
 
-    public Product resolveProduct(String slugOrId) {
+    private Product resolveVisibleProduct(String slugOrId, UUID currentUserId, UserRole currentRole) {
+        Product product = resolveAnyProduct(slugOrId);
+        if (product.isPurchasable()) {
+            return product;
+        }
+        boolean isAdmin = currentRole == UserRole.ADMIN;
+        boolean isOwner = product.isOwnedBy(currentUserId);
+        boolean isBuyer = currentUserId != null
+                && orderItemRepository.hasVerifiedPurchase(currentUserId, product.getId(), OrderStatus.PAID);
+        if (isAdmin || isOwner || isBuyer) {
+            return product;
+        }
+        throw ApiException.notFound("Timbre não encontrado.");
+    }
+
+    private Product resolveAnyProduct(String slugOrId) {
         try {
             UUID id = UUID.fromString(slugOrId);
             return productRepository.findByIdWithCreator(id)
@@ -228,73 +266,7 @@ public class CatalogService {
         }
     }
 
-    public CatalogDtos.ProductCardDto toProductCard(Product p) {
-        BigDecimal originalBundlePrice = null;
-        Integer discountPercent = null;
-        int includedCount = 0;
-
-        if (p.getProductType() == ProductType.BUNDLE) {
-            List<BundleItem> items = bundleItemRepository.findByBundleIdWithProducts(p.getId());
-            includedCount = items.size();
-            if (!items.isEmpty()) {
-                originalBundlePrice = items.stream()
-                        .map(bi -> bi.getIncludedProduct().getPrice())
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                        .setScale(2, RoundingMode.HALF_UP);
-                if (originalBundlePrice.compareTo(p.getPrice()) > 0) {
-                    BigDecimal diff = originalBundlePrice.subtract(p.getPrice());
-                    discountPercent = diff.multiply(BigDecimal.valueOf(100))
-                            .divide(originalBundlePrice, 0, RoundingMode.HALF_UP)
-                            .intValue();
-                }
-            }
-        }
-
-        List<String> tagList = (p.getTags() == null || p.getTags().isBlank())
-                ? List.of()
-                : Arrays.stream(p.getTags().split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .toList();
-
-        CreatorProfile c = p.getCreator();
-        CatalogDtos.CreatorSummary creatorSummary = new CatalogDtos.CreatorSummary(
-                c.getId(),
-                c.getDisplayName(),
-                c.getSlug(),
-                c.getAvatarUrl(),
-                c.getMainGear()
-        );
-
-        String demoUrl = (p.getDemoAudioKey() != null && !p.getDemoAudioKey().isBlank())
-                ? "/api/audio/demo/" + p.getId()
-                : null;
-
-        return new CatalogDtos.ProductCardDto(
-                p.getId(),
-                p.getTitle(),
-                p.getSlug(),
-                p.getDescription(),
-                p.getPrice(),
-                originalBundlePrice,
-                discountPercent,
-                p.getProductType(),
-                p.getGenre(),
-                p.getTargetGear(),
-                p.getSourceGear(),
-                p.getPickupType(),
-                tagList,
-                demoUrl,
-                p.getDemoDurationSeconds(),
-                p.getDemoLoudnessLufs(),
-                p.getDemoBitrateKbps(),
-                p.getCurrentVersion(),
-                p.getAverageRating(),
-                p.getReviewCount(),
-                p.getSalesCount(),
-                includedCount,
-                creatorSummary,
-                p.getCreatedAt()
-        );
+    private static String escapeLike(String input) {
+        return input.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

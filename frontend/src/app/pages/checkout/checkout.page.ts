@@ -1,7 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, of, switchMap, take, takeWhile, timer } from 'rxjs';
 import { CartService } from '../../core/services/cart.service';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -20,7 +22,6 @@ import { PixQrComponent } from '../../shared/components/pix-qr.component';
       </div>
 
       @if (activeOrder(); as order) {
-        <!-- Active PIX / Order Settlement View -->
         <section class="order-stage card">
           @if (order.status === 'PAID') {
             <div class="paid-banner">
@@ -32,23 +33,40 @@ import { PixQrComponent } from '../../shared/components/pix-qr.component';
                 <a routerLink="/" class="btn btn-outline">Continuar Explorando</a>
               </div>
             </div>
+          } @else if (order.status === 'EXPIRED' || order.status === 'FAILED' || order.status === 'CANCELLED') {
+            <div class="paid-banner">
+              <span class="badge badge-danger">{{ order.status }} · {{ order.orderCode }}</span>
+              <h2>Este pagamento não foi concluído</h2>
+              <p>O prazo do PIX expirou ou o pagamento falhou. Você pode tentar novamente gerando um novo pedido.</p>
+              <div class="paid-actions">
+                <button class="btn btn-primary" (click)="resetOrder()">Voltar ao Carrinho</button>
+              </div>
+            </div>
           } @else {
             <div class="pix-stage">
               <div class="pix-left">
-                <span class="badge badge-accent">AGUARDANDO PIX · {{ order.orderCode }}</span>
-                <h2>Pague {{ fmtPrice(order.totalAmount) }} via PIX</h2>
-                <p>Escaneie o QR Code ou copie o código EMVCo abaixo. A liberação dos arquivos ocorre imediatamente após a confirmação do webhook.</p>
+                <span class="badge badge-accent">AGUARDANDO CONFIRMAÇÃO · {{ order.orderCode }}</span>
+                <h2>Pague {{ fmtPrice(order.totalAmount) }} via {{ order.paymentMethod === 'PIX' ? 'PIX' : 'Cartão' }}</h2>
+                <p>
+                  @if (order.paymentMethod === 'PIX') {
+                    Escaneie o QR Code ou copie o código EMVCo abaixo. Esta página atualiza automaticamente assim que o webhook confirmar o pagamento.
+                  } @else {
+                    Aguardando autorização da operadora via webhook seguro. Esta página atualiza automaticamente.
+                  }
+                </p>
 
                 @if (order.pixCopyPaste) {
                   <app-pix-qr [payload]="order.pixCopyPaste"></app-pix-qr>
                 }
 
-                <div class="sandbox-box">
-                  <div class="mono sb-label">AMBIENTE DE DEMONSTRAÇÃO (WEBHOOK HMAC ASSINADO)</div>
-                  <button class="btn btn-accent btn-lg full" (click)="simulatePix(order.id)" [disabled]="confirming()">
-                    {{ confirming() ? 'Processando Webhook...' : 'Confirmar Pagamento PIX Agora (Simular Webhook)' }}
-                  </button>
-                </div>
+                @if (sandboxEnabled()) {
+                  <div class="sandbox-box">
+                    <div class="mono sb-label">AMBIENTE SANDBOX DEV (WEBHOOK HMAC ASSINADO)</div>
+                    <button class="btn btn-accent btn-lg full" (click)="confirmSandbox(order.id)" [disabled]="confirming()">
+                      {{ confirming() ? 'Processando Webhook...' : 'Confirmar Pagamento Agora (Simular Webhook)' }}
+                    </button>
+                  </div>
+                }
               </div>
 
               <div class="pix-right">
@@ -86,7 +104,6 @@ import { PixQrComponent } from '../../shared/components/pix-qr.component';
         </div>
       } @else {
         <div class="checkout-grid">
-          <!-- Cart Items -->
           <section class="card items-box">
             @for (ci of cart.cart().items; track ci.productId) {
               <div class="cart-row">
@@ -104,7 +121,6 @@ import { PixQrComponent } from '../../shared/components/pix-qr.component';
             }
           </section>
 
-          <!-- Payment Selection -->
           <aside class="card summary-box">
             <h2>Pagamento</h2>
 
@@ -121,17 +137,10 @@ import { PixQrComponent } from '../../shared/components/pix-qr.component';
                 <input type="radio" name="pm" value="CREDIT_CARD" [(ngModel)]="paymentMethod"/>
                 <div>
                   <strong>Cartão de Crédito</strong>
-                  <div class="muted">Aprovação automática com split instantâneo</div>
+                  <div class="muted">Confirmação segura via webhook do gateway</div>
                 </div>
               </label>
             </div>
-
-            @if (paymentMethod === 'CREDIT_CARD') {
-              <div class="field">
-                <label>Últimos 4 dígitos (simulação)</label>
-                <input type="text" class="input mono" [(ngModel)]="cardLast4" maxlength="4" placeholder="4242"/>
-              </div>
-            }
 
             <div class="totals">
               <div class="t-row">
@@ -149,7 +158,7 @@ import { PixQrComponent } from '../../shared/components/pix-qr.component';
             </div>
 
             <button class="btn btn-accent btn-lg full" (click)="placeOrder()" [disabled]="placing()">
-              {{ placing() ? 'Gerando cobrança...' : (paymentMethod === 'PIX' ? 'Gerar PIX e Finalizar' : 'Pagar com Cartão') }}
+              {{ placing() ? 'Gerando cobrança...' : (paymentMethod === 'PIX' ? 'Gerar PIX e Finalizar' : 'Gerar Cobrança no Cartão') }}
             </button>
           </aside>
         </div>
@@ -255,32 +264,48 @@ export class CheckoutPage implements OnInit {
   readonly cart = inject(CartService);
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
-  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly activeOrder = signal<OrderDto | null>(null);
   readonly placing = signal(false);
   readonly confirming = signal(false);
+  readonly sandboxEnabled = signal(false);
   readonly fmtPrice = formatBRL;
 
   paymentMethod: PaymentMethod = 'PIX';
-  cardLast4 = '4242';
+  private idempotencyKey = crypto.randomUUID();
 
   ngOnInit(): void {
     this.cart.refresh();
+    this.api.getPublicConfig().subscribe({
+      next: cfg => this.sandboxEnabled.set(!!cfg.sandboxEnabled),
+      error: () => this.sandboxEnabled.set(false)
+    });
   }
 
   removeItem(productId: string): void {
+    this.idempotencyKey = crypto.randomUUID();
     this.cart.remove(productId).subscribe();
   }
 
+  resetOrder(): void {
+    this.activeOrder.set(null);
+    this.idempotencyKey = crypto.randomUUID();
+    this.cart.refresh();
+  }
+
   placeOrder(): void {
+    if (this.placing()) return;
     this.placing.set(true);
-    this.api.checkout(this.paymentMethod, this.cardLast4).subscribe({
+    this.api.checkout(this.paymentMethod, this.idempotencyKey).subscribe({
       next: order => {
         this.activeOrder.set(order);
         this.placing.set(false);
+        this.idempotencyKey = crypto.randomUUID();
         this.cart.refresh();
-        if (order.status === 'PAID') {
+        if (order.status === 'PENDING_PAYMENT') {
+          this.watchPaymentStatus(order.id);
+        } else if (order.status === 'PAID') {
           this.toast.show('Compra confirmada! Timbres liberados na sua Biblioteca.', 'success');
         }
       },
@@ -291,17 +316,35 @@ export class CheckoutPage implements OnInit {
     });
   }
 
-  simulatePix(orderId: string): void {
+  confirmSandbox(orderId: string): void {
+    if (this.confirming()) return;
     this.confirming.set(true);
-    this.api.simulatePixPayment(orderId).subscribe({
+    this.api.confirmSandboxPayment(orderId).subscribe({
       next: order => {
         this.activeOrder.set(order);
         this.confirming.set(false);
-        this.toast.show('PIX confirmado via webhook! Split liquidado e biblioteca atualizada.', 'success');
+        this.toast.show('Pagamento confirmado via webhook! Split liquidado e biblioteca atualizada.', 'success');
       },
       error: err => {
         this.confirming.set(false);
-        this.toast.show(err.error?.message || 'Erro ao confirmar PIX.', 'error');
+        this.toast.show(err.error?.message || 'Erro ao confirmar pagamento sandbox.', 'error');
+      }
+    });
+  }
+
+  private watchPaymentStatus(orderId: string): void {
+    timer(3000, 3000).pipe(
+      switchMap(() => this.api.getOrder(orderId).pipe(catchError(() => of(null)))),
+      takeWhile(order => order === null || order.status === 'PENDING_PAYMENT', true),
+      take(200),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(order => {
+      if (!order) return;
+      this.activeOrder.set(order);
+      if (order.status === 'PAID') {
+        this.toast.show('Pagamento confirmado! Seus timbres já estão liberados na Biblioteca.', 'success');
+      } else if (order.status === 'EXPIRED') {
+        this.toast.show('O código PIX expirou. Gere um novo pedido.', 'error');
       }
     });
   }

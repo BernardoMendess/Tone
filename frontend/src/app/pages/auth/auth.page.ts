@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { WishlistService } from '../../core/services/wishlist.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -34,23 +35,25 @@ import { ToastService } from '../../core/services/toast.service';
             </button>
           </form>
 
-          <div class="demo-box">
-            <div class="demo-title mono">ACESSO RÁPIDO (CONTAS DE DEMONSTRAÇÃO)</div>
-            <div class="demo-grid">
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('buyer@tone.com', 'Buyer@123')">
-                Comprador (Biblioteca + Favoritos)
-              </button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('lucas@tone.com', 'Creator@123')">
-                Criador Aprovado (Estúdio + Financeiro)
-              </button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('pedro@tone.com', 'Creator@123')">
-                Criador Pendente (Em Curadoria)
-              </button>
-              <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('admin@tone.com', 'Admin@123')">
-                Administrador (Curadoria + Split)
-              </button>
+          @if (sandboxEnabled()) {
+            <div class="demo-box">
+              <div class="demo-title mono">ACESSO RÁPIDO (CONTAS DE DEMONSTRAÇÃO — DEV)</div>
+              <div class="demo-grid">
+                <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('buyer@tone.com', 'Buyer@123')">
+                  Comprador (Biblioteca + Favoritos)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('lucas@tone.com', 'Creator@123')">
+                  Criador Aprovado (Estúdio + Financeiro)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('pedro@tone.com', 'Creator@123')">
+                  Criador Pendente (Em Curadoria)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" (click)="fillAndLogin('admin@tone.com', 'Admin@123')">
+                  Administrador (Curadoria + Split)
+                </button>
+              </div>
             </div>
-          </div>
+          }
         } @else {
           <form (ngSubmit)="onRegister()">
             <div class="field">
@@ -62,8 +65,8 @@ import { ToastService } from '../../core/services/toast.service';
               <input type="email" class="input" [(ngModel)]="email" name="email" required placeholder="voce@exemplo.com"/>
             </div>
             <div class="field">
-              <label>Senha (mín. 6 caracteres)</label>
-              <input type="password" class="input" [(ngModel)]="password" name="password" required minlength="6"/>
+              <label>Senha (mín. 10 caracteres)</label>
+              <input type="password" class="input" [(ngModel)]="password" name="password" required minlength="10"/>
             </div>
             <button type="submit" class="btn btn-primary full" [disabled]="loading()">
               {{ loading() ? 'Criando conta...' : 'Criar Conta Gratuita' }}
@@ -104,8 +107,9 @@ import { ToastService } from '../../core/services/toast.service';
     }
   `]
 })
-export class AuthPage {
+export class AuthPage implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
   private readonly cart = inject(CartService);
   private readonly wishlist = inject(WishlistService);
   private readonly toast = inject(ToastService);
@@ -114,10 +118,18 @@ export class AuthPage {
 
   readonly mode = signal<'login' | 'register'>('login');
   readonly loading = signal(false);
+  readonly sandboxEnabled = signal(false);
 
   fullName = '';
   email = '';
   password = '';
+
+  ngOnInit(): void {
+    this.api.getPublicConfig().subscribe({
+      next: cfg => this.sandboxEnabled.set(!!cfg.sandboxEnabled),
+      error: () => this.sandboxEnabled.set(false)
+    });
+  }
 
   fillAndLogin(email: string, password: string): void {
     this.email = email;

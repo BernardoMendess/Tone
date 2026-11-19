@@ -1,11 +1,19 @@
 export type UserRole = 'BUYER' | 'CREATOR' | 'ADMIN';
-export type CreatorStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type CreatorStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 export type ProductType = 'PATCH' | 'CAPTURE' | 'IR' | 'BUNDLE';
 export type PickupType = 'SINGLE_COIL' | 'HUMBUCKER' | 'P90' | 'ACTIVE' | 'PIEZO' | 'ANY';
 export type PaymentMethod = 'PIX' | 'CREDIT_CARD';
-export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'FAILED' | 'EXPIRED' | 'REFUNDED';
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'FAILED' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED';
 export type SplitStatus = 'SCHEDULED' | 'SETTLED' | 'REFUNDED';
 export type PayoutStatus = 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
 
 export interface UserInfo {
   id: string;
@@ -54,6 +62,7 @@ export interface ProductCard {
   reviewCount: number;
   salesCount: number;
   includedCount: number;
+  active: boolean;
   creator: CreatorSummary;
   createdAt: string;
 }
@@ -149,6 +158,7 @@ export interface PaymentSplitDto {
   takeRatePercent: number;
   status: SplitStatus;
   gatewaySplitReference: string;
+  availableAt: string | null;
 }
 
 export interface OrderDto {
@@ -197,7 +207,7 @@ export interface PresignedDownload {
 
 export interface NotificationItem {
   id: string;
-  type: 'PATCH_UPDATE' | 'CREATOR_APPROVED' | 'CREATOR_REJECTED' | 'SALE_COMPLETED';
+  type: 'PATCH_UPDATE' | 'CREATOR_APPROVED' | 'CREATOR_REJECTED' | 'CREATOR_SUSPENDED' | 'SALE_COMPLETED' | 'ORDER_REFUNDED';
   title: string;
   message: string;
   relatedProductId: string | null;
@@ -261,6 +271,7 @@ export interface CreatorDashboard {
   platformFeeRetained: number;
   netRevenueTotal: number;
   totalWithdrawn: number;
+  heldBalance: number;
   availableBalance: number;
   currentTakeRatePercent: number;
   monthlySeries: MonthlyRevenuePoint[];

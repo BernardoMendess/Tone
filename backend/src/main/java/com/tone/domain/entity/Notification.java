@@ -55,6 +55,7 @@ public class Notification {
     public void setRelatedProductId(UUID relatedProductId) { this.relatedProductId = relatedProductId; }
     public boolean isRead() { return read; }
     public void setRead(boolean read) { this.read = read; }
+    public void markRead() { this.read = true; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
